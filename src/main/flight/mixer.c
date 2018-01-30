@@ -15,6 +15,40 @@
  * along with Cleanflight.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+// !!! Either TORQUE_BOOST_ENABLE or THROTTLE_BOOST_ENABLE
+
+// Torque boost gives a transient boost to motor output to overcome prop inertia.
+// This results in faster throttle response and faster pid response
+#define TORQUE_BOOST_ENABLE   1
+// max time constant for prop acceleration. larger values mean a shorter boost time
+#define MAX_PROP_ACCELERATION_TCONST 0.002f
+// max time constant for prop deceleration. larger values mean a shorter boost time
+#define MAX_PROP_DECELERATION_TCONST 0.002f
+// max torque boost strenth
+#define MAX_TORQUE_BOOST_STRENGTH    10.0f
+// these three values are tuned on the TX. Chose your AUX channels below
+#define PROP_ACCELERATION_AUX        AUX2
+#define PROP_DECELERATION_AUX        AUX4
+#define TORQUE_BOOST_STRENGTH_AUX    AUX3
+
+// Throttle boost gives a transient boost to throttle only to overcome prop inertia or increase punch.
+// its implemented as high pass filter. Cutoff tunes the cutoff frequency, boost strength is linear boost
+// kick strength is quadradic boost
+#define THROTTLE_BOOST_ENABLE 0
+#define THROTTLE_BOOST_MAX_CUTOFF 30.0f
+#define THROTTLE_BOOST_MAX_BOOST_STRENGTH 7.0f
+#define THROTTLE_BOOST_MAX_KICK_STRENGTH 30.0f
+// Tune via TX on these channels
+#define THROTTLE_BOOST_CUTOFF_AUX         AUX2
+#define THROTTLE_BOOST_BOOST_STRENGTH_AUX AUX4
+#define THROTTLE_BOOST_KICK_STRENGTH_AUX  AUX3
+
+// New airmode which allows the magnitude of throttle adjustments 
+#define NEW_AIRMODE_ENABLE    1
+#define NEW_AIRMODE_MAX_THROTTLE_ADJUST 1.0f
+
+
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -633,26 +667,6 @@ static void applyFlipOverAfterCrashModeToMotors(void)
         }
     }
 }
-
-#define TORQUE_BOOST_ENABLE   1
-
-#define MAX_PROP_ACCELERATION_TCONST 0.002f
-#define MAX_PROP_DECELERATION_TCONST 0.002f
-#define MAX_TORQUE_BOOST_STRENGTH    10.0f
-#define PROP_ACCELERATION_AUX        AUX2
-#define PROP_DECELERATION_AUX        AUX4
-#define TORQUE_BOOST_STRENGTH_AUX    AUX3
-
-#define THROTTLE_BOOST_ENABLE 0
-#define THROTTLE_BOOST_MAX_CUTOFF 30.0f
-#define THROTTLE_BOOST_MAX_BOOST_STRENGTH 7.0f
-#define THROTTLE_BOOST_MAX_KICK_STRENGTH 30.0f
-#define THROTTLE_BOOST_CUTOFF_AUX         AUX2
-#define THROTTLE_BOOST_BOOST_STRENGTH_AUX AUX4
-#define THROTTLE_BOOST_KICK_STRENGTH_AUX  AUX3
-
-#define NEW_AIRMODE_ENABLE    1
-#define NEW_AIRMODE_MAX_THROTTLE_ADJUST 1.0f
 
 static void applyMixToMotors(float motorMix[MAX_SUPPORTED_MOTORS])
 {
