@@ -634,12 +634,51 @@ static void applyFlipOverAfterCrashModeToMotors(void)
     }
 }
 
+#define TORQUE_BOOST_ENABLE   1
+
+#define MAX_PROP_ACCELERATION_TCONST 0.002f
+#define MAX_PROP_DECELERATION_TCONST 0.002f
+#define MAX_TORQUE_BOOST_STRENGTH    10.0f
+#define PROP_ACCELERATION_AUX        AUX2
+#define PROP_DECELERATION_AUX        AUX4
+#define TORQUE_BOOST_STRENGTH_AUX    AUX3
+
+#define THROTTLE_BOOST_ENABLE 0
+#define THROTTLE_BOOST_MAX_CUTOFF 30.0f
+#define THROTTLE_BOOST_MAX_BOOST_STRENGTH 7.0f
+#define THROTTLE_BOOST_MAX_KICK_STRENGTH 30.0f
+#define THROTTLE_BOOST_CUTOFF_AUX         AUX2
+#define THROTTLE_BOOST_BOOST_STRENGTH_AUX AUX4
+#define THROTTLE_BOOST_KICK_STRENGTH_AUX  AUX3
+
+#define NEW_AIRMODE_ENABLE    1
+#define NEW_AIRMODE_MAX_THROTTLE_ADJUST 1.0f
+
 static void applyMixToMotors(float motorMix[MAX_SUPPORTED_MOTORS])
 {
-    // Now add in the desired throttle, but keep in a range that doesn't clip adjusted
+//    ((float)rcData[ AUX3] - (float) PWM_RANGE_MIN ) / ((float)PWM_RANGE_MAX - (float)PWM_RANGE_MIN ) > 0.5f;
+//  time constant for prop acceleration. 
+//    float propBrk = propAcc;
+
+// Now add in the desired throttle, but keep in a range that doesn't clip adjusted
     // roll/pitch/yaw. This could move throttle down, but also up for those low throttle flips.
     for (uint32_t i = 0; i < motorCount; i++) {
-        float motorOutput = motorOutputMin + (motorOutputRange * (motorOutputMixSign * motorMix[i] + throttle * currentMixer[i].throttle));
+        float newSpeed = motorMix[ i ] + throttle;
+#if TORQUE_BOOST_ENABLE        
+        static float curSpeed[MAX_SUPPORTED_MOTORS];
+        float propAcc = ((float)rcData[ PROP_ACCELERATION_AUX] - (float) PWM_RANGE_MIN ) / (PWM_RANGE_MAX - PWM_RANGE_MIN ) * MAX_PROP_ACCELERATION_TCONST *
+            targetPidLooptime / ( 1000000.0f / 8000.0f );
+        float propBrk = ((float)rcData[ PROP_DECELERATION_AUX] - (float) PWM_RANGE_MIN ) / (PWM_RANGE_MAX - PWM_RANGE_MIN ) * MAX_PROP_DECELERATION_TCONST *
+            targetPidLooptime / ( 1000000.0f / 8000.0f );
+        float boostStrength = ((float)rcData[ TORQUE_BOOST_STRENGTH_AUX] - (float) PWM_RANGE_MIN ) / (PWM_RANGE_MAX - PWM_RANGE_MIN ) * MAX_TORQUE_BOOST_STRENGTH;
+        float speedDiff = newSpeed - curSpeed[i];
+        newSpeed = constrainf( newSpeed + speedDiff * boostStrength, 0.0f, 1.0f );
+        curSpeed[ i ] += ( newSpeed - curSpeed[i] ) * (speedDiff > 0.0f  ? propAcc : propBrk );
+#endif
+        
+
+//        float motorOutput = motorOutputMin + (motorOutputRange * (/* motorOutputMixSign *  */motorMix[i] + throttle * currentMixer[i].throttle));
+        float motorOutput = motorOutputMin + (motorOutputRange * ( newSpeed));
 
         if (failsafeIsActive()) {
             if (isMotorProtocolDshot()) {
@@ -650,7 +689,7 @@ static void applyMixToMotors(float motorMix[MAX_SUPPORTED_MOTORS])
         } else {
             motorOutput = constrain(motorOutput, motorRangeMin, motorRangeMax);
         }
-
+        
         // Motor stop handling
         if (feature(FEATURE_MOTOR_STOP) && ARMING_FLAG(ARMED) && !feature(FEATURE_3D) && !isAirmodeActive()) {
             if (((rcData[THROTTLE]) < rxConfig()->mincheck)) {
@@ -706,18 +745,32 @@ void mixTable(uint8_t vbatPidCompensation)
             scaledAxisPidPitch * currentMixer[i].pitch +
             scaledAxisPidYaw   * currentMixer[i].yaw;
 
-        mix *= vbatCompensationFactor;  // Add voltage compensation
-
+        mix *= vbatCompensationFactor * motorOutputMixSign;  // Add voltage compensation
+        motorMix[i] = mix;
+        
         if (mix > motorMixMax) {
             motorMixMax = mix;
         } else if (mix < motorMixMin) {
             motorMixMin = mix;
         }
-        motorMix[i] = mix;
     }
 
     motorMixRange = motorMixMax - motorMixMin;
-
+    
+    
+#if THROTTLE_BOOST_ENABLE
+    static pt1Filter_t throttlelpf;
+    if( targetPidLooptime ) {
+        float cut = ((float)rcData[ AUX2] - (float) PWM_RANGE_MIN ) / (PWM_RANGE_MAX - PWM_RANGE_MIN ) * THROTTLE_BOOST_MAX_CUTOFF;
+        float boostStrength = ((float)rcData[ AUX4] - (float) PWM_RANGE_MIN ) / (PWM_RANGE_MAX - PWM_RANGE_MIN ) * THROTTLE_BOOST_MAX_BOOST_STRENGTH;
+        float kickStrength = ((float)rcData[ AUX3] - (float) PWM_RANGE_MIN ) / (PWM_RANGE_MAX - PWM_RANGE_MIN ) * THROTTLE_BOOST_MAX_KICK_STRENGTH;
+        pt1FilterInit( &throttlelpf, cut, targetPidLooptime * 0.000001 );
+        float throttlehpf = throttle - pt1FilterApply( &throttlelpf, throttle );
+        throttle = constrainf( throttle + boostStrength * throttlehpf + kickStrength * throttlehpf * throttlehpf, 0.0f, 1.0f );
+    }
+#endif    
+    
+#if !NEW_AIRMODE_ENABLE
     if (motorMixRange > 1.0f) {
         for (int i = 0; i < motorCount; i++) {
             motorMix[i] /= motorMixRange;
@@ -732,6 +785,57 @@ void mixTable(uint8_t vbatPidCompensation)
             throttle = constrainf(throttle, 0.0f + throttleLimitOffset, 1.0f - throttleLimitOffset);
         }
     }
+#else
+    float newThrottle = throttle;
+    
+    if( motorMixRange > 1.0f ) {
+        float scaleFactor = 1.0f/ motorMixRange;
+        for (int i = 0; i < motorCount; i++) {
+            motorMix[i] *= scaleFactor;
+        }
+        motorMixMin *= scaleFactor;
+        motorMixMax *= scaleFactor;
+        motorMixRange = motorMixMax - motorMixMin;
+    }
+        
+    if( isAirmodeActive() || throttle > 0.5f ) {
+        // do we have to adjust range to fit in [0,1]?
+        if( motorMixMin + throttle < 0.0f || motorMixMax + throttle > 1.0f ) {
+            float adjustment = 0.0f;
+            float scale = 1.0f;
+            if( motorMixMin + throttle < 0.0f ) adjustment = -(motorMixMin + throttle);
+            else if( motorMixMax + throttle > 1.0f ) adjustment = -( motorMixMax + throttle - 1.0f );
+            // is adjustment not possible without scaling?
+            if( adjustment > NEW_AIRMODE_MAX_THROTTLE_ADJUST || adjustment < -throttle ) {
+                float zeroOffset = (motorMixMin + motorMixMax) / (2.0f * motorMixRange );
+                float maxThrottleMoveUp = constrainf( NEW_AIRMODE_MAX_THROTTLE_ADJUST, 0.0f, 1.0f - throttle );
+                float maxThrottleMoveDown = - throttle;
+                newThrottle = 0.5f - zeroOffset;
+                if( newThrottle - throttle > maxThrottleMoveUp )
+                    newThrottle = throttle + maxThrottleMoveUp;
+                else if (newThrottle - throttle < maxThrottleMoveDown )
+                    newThrottle = throttle + maxThrottleMoveDown;
+                
+                if( newThrottle + motorMixMax > 1.0f )
+                    scale = ( 1 - newThrottle ) / ( motorMixMax - newThrottle );
+                if( newThrottle + motorMixMin < 0.0f ) {
+                    float newScale = ( newThrottle  ) / ( newThrottle - motorMixMin );
+                    scale = constrainf( newScale, 0, scale );
+                }
+            }
+            else newThrottle += adjustment;
+            for (int i = 0; i < motorCount; i++) {
+                motorMix[i] *= scale;
+            }
+            motorMixMin *= scale;
+            motorMixMax *= scale;
+            motorMixRange = motorMixMax - motorMixMin;
+        }
+        
+    }
+    throttle = newThrottle;
+
+#endif
 
     // Apply the mix to motor endpoints
     applyMixToMotors(motorMix);
