@@ -532,7 +532,20 @@ void pidController(const pidProfile_t *pidProfile, const rollAndPitchTrims_t *an
                     BEEP_OFF;
                 }
             }
-            axisPID_D[axis] = Kd[axis] * delta * tpaFactor;
+            float error = currentPidSetpoint - gyroRateFiltered;
+            if( error < 0.0f ) error = -error;
+            float dweight = 0.0f;
+            const float dErrPhaseInStart = 500.0f;
+            const float dErrPhaseInEnd = 400.0f;
+            const float dErrPhaseOutStart = 50.0f;
+            const float dErrPhaseOutEnd = 0.0f;
+            if( error > dErrPhaseInStart ) dweight = 0.0f;
+            else if( error <= dErrPhaseInEnd && error > dErrPhaseOutStart ) dweight = 1.0;
+            else if( error <= dErrPhaseOutStart && error > dErrPhaseOutEnd )
+                dweight = ( error - dErrPhaseOutEnd ) / (dErrPhaseOutStart - dErrPhaseOutEnd );
+            else if( error <= dErrPhaseOutEnd ) dweight = 0;
+            else dweight = ( dErrPhaseInStart - error ) / (dErrPhaseInStart - dErrPhaseInEnd );
+            axisPID_D[axis] = Kd[axis] * delta * dweight * tpaFactor;
         }
 
         // Disable PID control if at zero throttle or if gyro overflow detected
