@@ -36,7 +36,7 @@
 // kick strength is quadradic boost
 #define THROTTLE_BOOST_ENABLE 0
 #define THROTTLE_BOOST_MAX_CUTOFF 30.0f
-#define THROTTLE_BOOST_MAX_BOOST_STRENGTH 7.0f
+#define THROTTLE_BOOST_MAX_BOOST_STRENGTH 3.0f
 #define THROTTLE_BOOST_MAX_KICK_STRENGTH 30.0f
 // Tune via TX on these channels
 #define THROTTLE_BOOST_CUTOFF_AUX         AUX2
@@ -44,8 +44,8 @@
 #define THROTTLE_BOOST_KICK_STRENGTH_AUX  AUX3
 
 // New airmode which allows the magnitude of throttle adjustments 
-#define NEW_AIRMODE_ENABLE    1
-#define NEW_AIRMODE_MAX_THROTTLE_ADJUST 1.0f
+#define NEW_AIRMODE_ENABLE    0
+#define NEW_AIRMODE_MAX_THROTTLE_ADJUST 0.2f
 
 
 
