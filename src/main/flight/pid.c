@@ -196,6 +196,11 @@ static FAST_RAM filterApplyFnPtr dtermLowpass2ApplyFn;
 static FAST_RAM pt1Filter_t dtermLowpass2[2];
 static FAST_RAM filterApplyFnPtr ptermYawLowpassApplyFn;
 static FAST_RAM pt1Filter_t ptermYawLowpass;
+static FAST_RAM pt1Filter_t windupLpf[3];
+
+
+#define ITERM_STICK_CUTOFF 15
+#define ITERM_STICK_LEVEL   6
 
 void pidInitFilters(const pidProfile_t *pidProfile)
 {
@@ -280,6 +285,8 @@ void pidInitFilters(const pidProfile_t *pidProfile)
     }
 
     pt1FilterInit(&throttleLpf, pt1FilterGain(pidProfile->throttle_boost_cutoff, dT));
+    for (int i = 0; i < 3; i++ )
+        pt1FilterInit(&windupLpf[i], pt1FilterGain( (float)ITERM_STICK_CUTOFF, dT ) );
 }
 
 typedef struct pidCoefficient_s {
@@ -573,6 +580,8 @@ void pidController(const pidProfile_t *pidProfile, const rollAndPitchTrims_t *an
     // ----------PID controller----------
     for (int axis = FD_ROLL; axis <= FD_YAW; ++axis) {
         float currentPidSetpoint = getSetpointRate(axis);
+        float stickHpf = currentPidSetpoint - pt1FilterApply(&windupLpf[axis], currentPidSetpoint );
+
         if (maxVelocity[axis]) {
             currentPidSetpoint = accelerationLimit(axis, currentPidSetpoint);
         }
@@ -610,8 +619,9 @@ void pidController(const pidProfile_t *pidProfile, const rollAndPitchTrims_t *an
         // -----calculate I component
         const float ITerm = pidData[axis].I;
         const float ITermNew = constrainf(ITerm + pidCoefficient[axis].Ki * errorRate * dynCi, -itermLimit, itermLimit);
+        const bool suppressIterm = axis != FD_YAW && fabsf( stickHpf > (float)ITERM_STICK_LEVEL );
         const bool outputSaturated = mixerIsOutputSaturated(axis, errorRate);
-        if (outputSaturated == false || ABS(ITermNew) < ABS(ITerm)) {
+        if (!suppressIterm && (outputSaturated == false || ABS(ITermNew) < ABS(ITerm))) {
             // Only increase ITerm if output is not saturated
             pidData[axis].I = ITermNew;
         }
