@@ -619,7 +619,7 @@ void pidController(const pidProfile_t *pidProfile, const rollAndPitchTrims_t *an
         // -----calculate I component
         const float ITerm = pidData[axis].I;
         const float ITermNew = constrainf(ITerm + pidCoefficient[axis].Ki * errorRate * dynCi, -itermLimit, itermLimit);
-        const bool suppressIterm = axis != FD_YAW && fabsf( stickHpf > (float)ITERM_STICK_LEVEL );
+        const bool suppressIterm = axis != FD_YAW && fabsf( stickHpf ) > (float)ITERM_STICK_LEVEL;
         const bool outputSaturated = mixerIsOutputSaturated(axis, errorRate);
         if (!suppressIterm && (outputSaturated == false || ABS(ITermNew) < ABS(ITerm))) {
             // Only increase ITerm if output is not saturated
