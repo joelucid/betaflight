@@ -24,6 +24,7 @@ extern uint16_t currentRxRefreshRate;
 
 void processRcCommand(void);
 float getSetpointRate(int axis);
+float getUnfilteredSetpointRate(int axis);
 float getRcDeflection(int axis);
 float getRcDeflectionAbs(int axis);
 float getThrottlePIDAttenuation(void);

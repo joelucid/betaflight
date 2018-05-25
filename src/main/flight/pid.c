@@ -50,6 +50,8 @@
 #include "flight/gps_rescue.h"
 #include "flight/mixer.h"
 
+#include "rx/rx.h"
+
 #include "io/gps.h"
 
 #include "sensors/gyro.h"
@@ -627,16 +629,34 @@ void pidController(const pidProfile_t *pidProfile, const rollAndPitchTrims_t *an
             // This is done to avoid DTerm spikes that occur with dynamically
             // calculated deltaT whenever another task causes the PID
             // loop execution to be delayed.
-            const float delta = (
-                dynCd * transition * (currentPidSetpoint - previousPidSetpoint[axis]) -
-                (gyroRateDterm[axis] - previousGyroRateDterm[axis])) / dT;
-
-            previousPidSetpoint[axis] = currentPidSetpoint;
+            static int interpolationSteps[2];
+            static float interpolationIncrement[2];
+            static float interpolationBucket[2];
+            float unfilteredSetpoint = getUnfilteredSetpointRate(axis);
+            if (unfilteredSetpoint != previousPidSetpoint[axis]) {
+                const float delta = (
+                    dynCd * transition * (unfilteredSetpoint - previousPidSetpoint[axis])) / dT;
+                interpolationSteps[axis] = rxGetRefreshRate() / targetPidLooptime;
+                interpolationBucket[axis] += delta;
+                interpolationIncrement[axis] = interpolationBucket[axis] / interpolationSteps[axis];
+            }
+            
+            previousPidSetpoint[axis] = unfilteredSetpoint;
+            
+            float delta;
+            if (interpolationSteps[axis]) {
+                interpolationSteps[axis]--;
+                delta = interpolationIncrement[axis];
+                interpolationBucket[axis] -= interpolationIncrement[axis];
+            }
+            else delta = 0;
+            
+            float D = -(gyroRateDterm[axis] - previousGyroRateDterm[axis]) / dT;
             previousGyroRateDterm[axis] = gyroRateDterm[axis];
-
-            detectAndSetCrashRecovery(pidProfile->crash_recovery, axis, currentTimeUs, delta, errorRate);
-
-            pidData[axis].D = pidCoefficient[axis].Kd * delta * tpaFactor;
+            
+            detectAndSetCrashRecovery(pidProfile->crash_recovery, axis, currentTimeUs, D, errorRate);
+            
+            pidData[axis].D = ( delta + D) * pidCoefficient[axis].Kd * tpaFactor;
 
 #ifdef USE_YAW_SPIN_RECOVERY
             if (yawSpinActive)  {

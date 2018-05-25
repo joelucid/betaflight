@@ -50,15 +50,21 @@
 
 typedef float (applyRatesFn)(const int axis, float rcCommandf, const float rcCommandfAbs);
 
-static float setpointRate[3], rcDeflection[3], rcDeflectionAbs[3];
+static float setpointRate[3], rcDeflection[3], rcDeflectionAbs[3], unfilteredSetpointRate[3];
 static float throttlePIDAttenuation;
 static bool reverseMotors = false;
 static applyRatesFn *applyRates;
+static int oldRcCommand[4] = { 0, 0, 0, 1000 };
 uint16_t currentRxRefreshRate;
 
 float getSetpointRate(int axis)
 {
     return setpointRate[axis];
+}
+
+float getUnfilteredSetpointRate(int axis)
+{
+    return unfilteredSetpointRate[axis];
 }
 
 float getRcDeflection(int axis)
@@ -133,6 +139,14 @@ static void calculateSetpointRate(int axis)
     DEBUG_SET(DEBUG_ANGLERATE, axis, angleRate);
 
     setpointRate[axis] = constrainf(angleRate, -SETPOINT_RATE_LIMIT, SETPOINT_RATE_LIMIT); // Rate limit protection (deg/sec)
+
+    if (oldRcCommand[axis] != 0 ) {
+        rcCommandf = oldRcCommand[axis] / 500.0f;
+        const float rcCommandfAbs = ABS(rcCommandf);
+        angleRate = applyRates(axis, rcCommandf, rcCommandfAbs);
+        unfilteredSetpointRate[axis] = constrainf(angleRate, -SETPOINT_RATE_LIMIT, SETPOINT_RATE_LIMIT); // Rate limit protection (deg/sec)
+    }
+    else unfilteredSetpointRate[axis] = setpointRate[axis];
 }
 
 static void scaleRcCommandToFpvCamAngle(void)
@@ -180,6 +194,7 @@ static void checkForThrottleErrorResetState(uint16_t rxRefreshRate)
     }
 }
 
+
 FAST_CODE FAST_CODE_NOINLINE void processRcCommand(void)
 {
     static float rcCommandInterp[4];
@@ -195,7 +210,7 @@ FAST_CODE FAST_CODE_NOINLINE void processRcCommand(void)
     uint8_t updatedChannel = 0;
 
     if (rxConfig()->rcInterpolation) {
-         // Set RC refresh rate for sampling and channels to filter
+        // Set RC refresh rate for sampling and channels to filter
         switch (rxConfig()->rcInterpolation) {
         case RC_SMOOTHING_AUTO:
             rxRefreshRate = currentRxRefreshRate + 1000; // Add slight overhead to prevent ramps
@@ -213,15 +228,26 @@ FAST_CODE FAST_CODE_NOINLINE void processRcCommand(void)
             rcInterpolationStepCount = rxRefreshRate / targetPidLooptime;
 
             for (int channel = ROLL; channel < interpolationChannels; channel++) {
-                rcStepSize[channel] = (rcCommand[channel] - rcCommandInterp[channel]) / (float)rcInterpolationStepCount;
+                int minRc, maxRc;
+                if( channel == THROTTLE ) {
+                    maxRc = 2000;
+                    minRc = 1000;
+                }
+                else {
+                    maxRc = 500;
+                    minRc = -500;
+                }
+                int diff = rcCommand[channel] - oldRcCommand[channel];
+                if (diff > 0 && maxRc - rcCommand[channel] < diff)
+                    diff = maxRc - rcCommand[channel];
+                else if (diff < 0 && minRc - rcCommand[channel] > diff)
+                        diff = minRc - rcCommand[channel];
+                
+                rcStepSize[channel] = diff / (float)rcInterpolationStepCount;
+                rcCommandInterp[channel] = rcCommand[channel];
+                oldRcCommand[channel] = rcCommand[channel];
             }
 
-            if (debugMode == DEBUG_RC_INTERPOLATION) {
-                debug[0] = lrintf(rcCommand[0]);
-                debug[1] = lrintf(currentRxRefreshRate / 1000);
-                //debug[1] = lrintf(rcCommandInterp[0]);
-                //debug[1] = lrintf(rcStepSize[0]*100);
-            }
         } else {
             rcInterpolationStepCount--;
         }
@@ -232,6 +258,13 @@ FAST_CODE FAST_CODE_NOINLINE void processRcCommand(void)
                 rcCommandInterp[updatedChannel] += rcStepSize[updatedChannel];
                 rcCommand[updatedChannel] = rcCommandInterp[updatedChannel];
             }
+        }
+        if (debugMode == DEBUG_RC_INTERPOLATION) {
+            debug[0] = lrintf(rcCommand[0]);
+//            debug[1] = lrintf(currentRxRefreshRate / 1000);
+            debug[1] = lrintf(oldRcCommand[0]);
+            //debug[1] = lrintf(rcCommandInterp[0]);
+            //debug[1] = lrintf(rcStepSize[0]*100);
         }
     } else {
         rcInterpolationStepCount = 0; // reset factor in case of level modes flip flopping
