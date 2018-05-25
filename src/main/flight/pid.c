@@ -141,6 +141,7 @@ void resetPidProfile(pidProfile_t *pidProfile)
         .throttle_boost = 0,
         .throttle_boost_cutoff = 15,
         .iterm_rotation = false,
+        .smart_feedforward = false         
     );
 }
 
@@ -310,6 +311,7 @@ static FAST_RAM_ZERO_INIT float itermLimit;
 FAST_RAM_ZERO_INIT float throttleBoost;
 pt1Filter_t throttleLpf;
 static FAST_RAM_ZERO_INIT bool itermRotation;
+static FAST_RAM_ZERO_INIT bool smartFeedforward;
 
 void pidInitConfig(const pidProfile_t *pidProfile)
 {
@@ -346,6 +348,7 @@ void pidInitConfig(const pidProfile_t *pidProfile)
     itermLimit = pidProfile->itermLimit;
     throttleBoost = pidProfile->throttle_boost * 0.1f;
     itermRotation = pidProfile->iterm_rotation == 1;
+    smartFeedforward = pidProfile->smart_feedforward == 1;
 }
 
 void pidInit(const pidProfile_t *pidProfile)
@@ -629,6 +632,7 @@ void pidController(const pidProfile_t *pidProfile, const rollAndPitchTrims_t *an
             // This is done to avoid DTerm spikes that occur with dynamically
             // calculated deltaT whenever another task causes the PID
             // loop execution to be delayed.
+<<<<<<< HEAD
             static int interpolationSteps[2];
             static float interpolationIncrement[2];
             static float interpolationBucket[2];
@@ -651,12 +655,29 @@ void pidController(const pidProfile_t *pidProfile, const rollAndPitchTrims_t *an
             }
             else delta = 0;
             
-            float D = -(gyroRateDterm[axis] - previousGyroRateDterm[axis]) / dT;
+            const float D = -(gyroRateDterm[axis] - previousGyroRateDterm[axis]) / dT;
             previousGyroRateDterm[axis] = gyroRateDterm[axis];
             
             detectAndSetCrashRecovery(pidProfile->crash_recovery, axis, currentTimeUs, D, errorRate);
             
-            pidData[axis].D = ( delta + D) * pidCoefficient[axis].Kd * tpaFactor;
+            pidData[axis].D = D * pidCoefficient[axis].Kd * tpaFactor;
+
+            const float pidFeedForward =
+                pidCoefficient[axis].Kd * delta * tpaFactor;
+            bool addFeedforward = true;
+            if (smartFeedforward) {
+                if (pidData[axis].P * pidFeedForward > 0) {
+                    if (ABS(pidFeedForward) > ABS(pidData[axis].P)) {
+                        pidData[axis].P = 0;
+                    }
+                    else {
+                        addFeedforward = false;
+                    }
+                }
+            }
+            if (addFeedforward) {
+                pidData[axis].D += pidFeedForward;
+            }
 
 #ifdef USE_YAW_SPIN_RECOVERY
             if (yawSpinActive)  {
