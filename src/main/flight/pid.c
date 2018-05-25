@@ -632,7 +632,6 @@ void pidController(const pidProfile_t *pidProfile, const rollAndPitchTrims_t *an
             // This is done to avoid DTerm spikes that occur with dynamically
             // calculated deltaT whenever another task causes the PID
             // loop execution to be delayed.
-<<<<<<< HEAD
             static int interpolationSteps[2];
             static float interpolationIncrement[2];
             static float interpolationBucket[2];
