@@ -301,7 +301,7 @@ void pidInitFilters(const pidProfile_t *pidProfile)
     if (itermRelax) {
         for (int i = 0; i < XYZ_AXIS_COUNT; i++) {
             pt1FilterInit(&windupLpf[i][0], pt1FilterGain(itermRelaxCutoffLow, dT));
-            pt1FilterInit(&windupLpf[i][1], pt1FilterGain(itermRelaxCutoffHigh, dT));
+            pt1FilterInit(&windupLpf[i][1], pt1FilterGain(itermRelaxCutoffHigh / 10.0f, dT));
         }
     }
 #endif
