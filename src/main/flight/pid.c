@@ -835,11 +835,10 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, const rollAndPitchT
 #if defined(USE_ITERM_RELAX)
         if (itermRelax && (axis < FD_YAW || itermRelax == ITERM_RELAX_RPY )) {
             const float gyroHpf = fabsf(stickSetpoint - pt1FilterApply(&windupLpf[axis][1], stickSetpoint));
-            if (itermRelaxCutoffHigh == 1) {
+            if (itermRelaxCutoffLow == 1) {
                 itermErrorRate = (1 - MIN(1, fabsf(gyroHpf) / 60.0f)) * (currentPidSetpoint - gyroRate);
             }
-            
-            const float gyroTarget = pt1FilterApply(&windupLpf[axis][0], stickSetpoint);
+            const float gyroTarget = pt1FilterApply(&windupLpf[axis][1], stickSetpoint);
             const float tolerance = gyroHpf * 1.0f;
             
             if (axis == FD_ROLL) {
@@ -849,7 +848,8 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, const rollAndPitchT
             }
             const float gmax = gyroTarget + tolerance;
             const float gmin = gyroTarget - tolerance;
-            if (itermRelaxCutoffHigh == 1) {
+
+            if (itermRelaxCutoffLow != 1) {
                 if (gyroRate >= gmin && gyroRate <= gmax) {
                     itermErrorRate = 0;
                 } else {
