@@ -834,35 +834,46 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, const rollAndPitchT
 #endif
 #if defined(USE_ITERM_RELAX)
         if (itermRelax && (axis < FD_YAW || itermRelax == ITERM_RELAX_RPY )) {
-            float gyroTargetLow = pt1FilterApply(&windupLpf[axis][0], currentPidSetpoint);
-            float gyroTargetHigh = pt1FilterApply(&windupLpf[axis][1], currentPidSetpoint);
+            const float gyroHpf = fabsf(stickSetpoint - pt1FilterApply(&windupLpf[axis][1], stickSetpoint));
+            if (itermRelaxCutoffHigh == 1) {
+                itermErrorRate = (1 - MIN(1, fabsf(gyroHpf) / 60.0f)) * (currentPidSetpoint - gyroRate);
+            }
+            
+            const float gyroTarget = pt1FilterApply(&windupLpf[axis][0], stickSetpoint);
+            const float tolerance = gyroHpf * 1.0f;
+            
+            if (axis == FD_ROLL) {
+                DEBUG_SET(DEBUG_ITERM_RELAX, 0, gyroTarget);
+                DEBUG_SET(DEBUG_ITERM_RELAX, 1, gyroTarget + tolerance);
+                DEBUG_SET(DEBUG_ITERM_RELAX, 2, gyroTarget - tolerance);
+            }
+            const float gmax = gyroTarget + tolerance;
+            const float gmin = gyroTarget - tolerance;
+            if (itermRelaxCutoffHigh == 1) {
+                if (gyroRate >= gmin && gyroRate <= gmax) {
+                    itermErrorRate = 0;
+                } else {
+                    itermErrorRate = (gyroRate > gmax ? gmax : gmin ) - gyroRate;
+                }
+            }
+            
 #if defined(USE_ABSOLUTE_CONTROL)
-            gyroTargetLow += acCorrection;
-            gyroTargetHigh += acCorrection;
-#endif
-            if (axis < FD_YAW) {
-                int itemOffset = (axis << 1);
-                DEBUG_SET(DEBUG_ITERM_RELAX, itemOffset++, gyroTargetHigh);
-                DEBUG_SET(DEBUG_ITERM_RELAX, itemOffset, gyroTargetLow);
+            itermErrorRate += acCorrection;
+            const float gmaxac = gyroTarget + 2 * tolerance;
+            const float gminac = gyroTarget - 2 * tolerance;
+            if (gyroRate >= gminac && gyroRate <= gmaxac) {
+                acErrorRate = 0;
+            } else {
+                acErrorRate = (gyroRate > gmaxac ? gmaxac : gminac ) - gyroRate;
             }
-            const float gmax = MAX(gyroTargetHigh, gyroTargetLow);
-            const float gmin = MIN(gyroTargetHigh, gyroTargetLow);
-            if (gyroRate < gmin || gyroRate > gmax) {
-                itermErrorRate = (gyroRate > gmax ? gmax : gmin ) - gyroRate;
-            }
-#if defined(USE_ABSOLUTE_CONTROL)
-            else {
-                itermErrorRate = acCorrection;
-            }
-            acErrorRate = itermErrorRate - acCorrection;
-#endif
+#endif // USE_ABSOLUTE_CONTROL             
         } else
 #endif // USE_ITERM_RELAX
-        {
-            itermErrorRate = errorRate;
+          {
+              itermErrorRate = errorRate;
 #if defined(USE_ABSOLUTE_CONTROL)
-            acErrorRate = errorRate;
-#endif
+              acErrorRate = errorRate;
+#endif // USE_ABSOLUTE_CONTROL
         }
         
 #if defined(USE_ABSOLUTE_CONTROL)
