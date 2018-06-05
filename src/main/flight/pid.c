@@ -301,7 +301,7 @@ void pidInitFilters(const pidProfile_t *pidProfile)
     if (itermRelax) {
         for (int i = 0; i < XYZ_AXIS_COUNT; i++) {
             pt1FilterInit(&windupLpf[i][0], pt1FilterGain(itermRelaxCutoffLow, dT));
-            pt1FilterInit(&windupLpf[i][1], pt1FilterGain(itermRelaxCutoffHigh / 10.0f, dT));
+            pt1FilterInit(&windupLpf[i][1], pt1FilterGain(itermRelaxCutoffHigh, dT));
         }
     }
 #endif
@@ -800,17 +800,94 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, const rollAndPitchT
         }
 #endif // USE_YAW_SPIN_RECOVERY
 
-#if defined(USE_ABSOLUTE_CONTROL)
-        // mix in a correction for accrued attitude error
-        float acCorrection = 0;
-        if (acGain > 0) {
-            acCorrection = constrainf(axisError[axis] * acGain, -acLimit, acLimit);
-            currentPidSetpoint += acCorrection;
-        }   
-#endif
+/* <<<<<<< HEAD */
+/* #if defined(USE_ABSOLUTE_CONTROL) */
+/*         // mix in a correction for accrued attitude error */
+/*         float acCorrection = 0; */
+/*         if (acGain > 0) { */
+/*             acCorrection = constrainf(axisError[axis] * acGain, -acLimit, acLimit); */
+/*             currentPidSetpoint += acCorrection; */
+/*         }    */
+/* #endif */
         
+/* ======= */
+/* >>>>>>> bug fixes */
         // -----calculate error rate
         const float gyroRate = gyro.gyroADCf[axis]; // Process variable from gyro output in deg/sec
+
+        // mix in a correction for accrued attitude error
+        float stickSetpoint = currentPidSetpoint;
+#ifdef USE_ABSOLUTE_CONTROL
+        float acCorrection = 0;
+        float acErrorRate;
+#endif        
+        float itermErrorRate = 0.0f;
+
+#if defined(USE_ITERM_RELAX)
+        if (itermRelax && (axis < FD_YAW || itermRelax == ITERM_RELAX_RPY )) {
+            const float gyroTarget = pt1FilterApply(&windupLpf[axis][1], stickSetpoint);
+            const float gyroHpf = fabsf(stickSetpoint - gyroTarget);
+            if (itermRelaxCutoffLow == 1) {
+                itermErrorRate = (1 - MIN(1, fabsf(gyroHpf) / 60.0f)) * (stickSetpoint - gyroRate);
+            }
+
+            const float tolerance = gyroHpf * 1.0f;
+            
+            if (axis == FD_ROLL) {
+                DEBUG_SET(DEBUG_ITERM_RELAX, 0, gyroTarget);
+                DEBUG_SET(DEBUG_ITERM_RELAX, 1, gyroTarget + tolerance);
+                DEBUG_SET(DEBUG_ITERM_RELAX, 2, gyroTarget - tolerance);
+                DEBUG_SET(DEBUG_ITERM_RELAX, 3, axisError[axis] * 10);
+            }
+            /* const float gmax = gyroTarget + tolerance; */
+            /* const float gmin = gyroTarget - tolerance; */
+            const float gmax = gyroTarget + tolerance;
+            const float gmin = gyroTarget - tolerance;
+
+            if (itermRelaxCutoffLow != 1) {
+                if (gyroRate >= gmin && gyroRate <= gmax) {
+                    itermErrorRate = 0;
+                } else {
+                    itermErrorRate = (gyroRate > gmax ? gmax : gmin ) - gyroRate;
+                }
+            }
+            
+#if defined(USE_ABSOLUTE_CONTROL)
+            itermErrorRate += acCorrection;
+            const float gmaxac = gyroTarget + 2 * tolerance;
+            const float gminac = gyroTarget - 2 * tolerance;
+            if (gyroRate >= gminac && gyroRate <= gmaxac) {
+                float acErrorRate1 = gmaxac - gyroRate;
+                float acErrorRate2 = gminac - gyroRate;
+                if (acErrorRate1 * axisError[axis] < 0) {
+                    acErrorRate = acErrorRate1;
+                } else {
+                    acErrorRate = acErrorRate2;
+                }
+                if (fabsf(acErrorRate*dT) > fabsf(axisError[axis]) ) {
+                    acErrorRate = -axisError[axis]/dT;
+                }
+            } else {
+                acErrorRate = (gyroRate > gmaxac ? gmaxac : gminac ) - gyroRate;
+            }
+#endif // USE_ABSOLUTE_CONTROL             
+        } else
+#endif // USE_ITERM_RELAX
+        {
+              itermErrorRate = errorRate;
+#if defined(USE_ABSOLUTE_CONTROL)
+              acErrorRate = errorRate;
+#endif // USE_ABSOLUTE_CONTROL
+        }
+        
+#if defined(USE_ABSOLUTE_CONTROL)
+        if (acGain > 0) {
+            axisError[axis] = constrainf(axisError[axis] + acErrorRate * dT, -acErrorLimit, acErrorLimit);
+            acCorrection = constrainf(axisError[axis] * acGain, -acLimit, acLimit);
+            currentPidSetpoint += acCorrection;
+            itermErrorRate += acCorrection;
+        }
+#endif
         float errorRate = currentPidSetpoint - gyroRate; // r - y
 
         handleCrashRecovery(
@@ -828,60 +905,7 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, const rollAndPitchT
         }
 
         // -----calculate I component
-        float itermErrorRate = 0.0f;
-#if defined(USE_ABSOLUTE_CONTROL)
-        float acErrorRate;
-#endif
-#if defined(USE_ITERM_RELAX)
-        if (itermRelax && (axis < FD_YAW || itermRelax == ITERM_RELAX_RPY )) {
-            const float gyroHpf = fabsf(stickSetpoint - pt1FilterApply(&windupLpf[axis][1], stickSetpoint));
-            if (itermRelaxCutoffLow == 1) {
-                itermErrorRate = (1 - MIN(1, fabsf(gyroHpf) / 60.0f)) * (currentPidSetpoint - gyroRate);
-            }
-            const float gyroTarget = pt1FilterApply(&windupLpf[axis][1], stickSetpoint);
-            const float tolerance = gyroHpf * 1.0f;
-            
-            if (axis == FD_ROLL) {
-                DEBUG_SET(DEBUG_ITERM_RELAX, 0, gyroTarget);
-                DEBUG_SET(DEBUG_ITERM_RELAX, 1, gyroTarget + tolerance);
-                DEBUG_SET(DEBUG_ITERM_RELAX, 2, gyroTarget - tolerance);
-            }
-            const float gmax = gyroTarget + tolerance;
-            const float gmin = gyroTarget - tolerance;
 
-            if (itermRelaxCutoffLow != 1) {
-                if (gyroRate >= gmin && gyroRate <= gmax) {
-                    itermErrorRate = 0;
-                } else {
-                    itermErrorRate = (gyroRate > gmax ? gmax : gmin ) - gyroRate;
-                }
-            }
-            
-#if defined(USE_ABSOLUTE_CONTROL)
-            itermErrorRate += acCorrection;
-            const float gmaxac = gyroTarget + 2 * tolerance;
-            const float gminac = gyroTarget - 2 * tolerance;
-            if (gyroRate >= gminac && gyroRate <= gmaxac) {
-                acErrorRate = 0;
-            } else {
-                acErrorRate = (gyroRate > gmaxac ? gmaxac : gminac ) - gyroRate;
-            }
-#endif // USE_ABSOLUTE_CONTROL             
-        } else
-#endif // USE_ITERM_RELAX
-          {
-              itermErrorRate = errorRate;
-#if defined(USE_ABSOLUTE_CONTROL)
-              acErrorRate = errorRate;
-#endif // USE_ABSOLUTE_CONTROL
-        }
-        
-#if defined(USE_ABSOLUTE_CONTROL)
-        if (acGain > 0) {
-            axisError[axis] = constrainf(axisError[axis] + acErrorRate * dT, -acErrorLimit, acErrorLimit);
-        }
-#endif
-        
         const float ITerm = pidData[axis].I;
         const float ITermNew = constrainf(ITerm + pidCoefficient[axis].Ki * itermErrorRate * dynCi, -itermLimit, itermLimit);
         const bool outputSaturated = mixerIsOutputSaturated(axis, errorRate);
