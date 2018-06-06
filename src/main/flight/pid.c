@@ -827,17 +827,14 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, const rollAndPitchT
                 const float gmax = gyroTarget + tolerance;
                 const float gmin = gyroTarget - tolerance;
                 
-                if (itermRelaxType == ITERM_RELAX_SETPOINT) {
-                    if (gyroRate >= gmin && gyroRate <= gmax) {
-                        itermErrorRate = 0;
-                    } else {
-                        itermErrorRate = (gyroRate > gmax ? gmax : gmin ) - gyroRate;
-                    }
+                if (gyroRate >= gmin && gyroRate <= gmax) {
+                    itermErrorRate = 0;
+                } else {
+                    itermErrorRate = (gyroRate > gmax ? gmax : gmin ) - gyroRate;
                 }
             }
             
 #if defined(USE_ABSOLUTE_CONTROL)
-            itermErrorRate += acCorrection;
             const float gmaxac = gyroTarget + 2 * tolerance;
             const float gminac = gyroTarget - 2 * tolerance;
             if (gyroRate >= gminac && gyroRate <= gmaxac) {
