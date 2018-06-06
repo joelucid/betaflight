@@ -830,9 +830,7 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, const rollAndPitchT
             if (itermRelaxCutoffLow == 1) {
                 itermErrorRate = (1 - MIN(1, fabsf(gyroHpf) / 60.0f)) * (stickSetpoint - gyroRate);
             }
-
             const float tolerance = gyroHpf * 1.0f;
-            
             if (axis == FD_ROLL) {
                 DEBUG_SET(DEBUG_ITERM_RELAX, 0, gyroTarget);
                 DEBUG_SET(DEBUG_ITERM_RELAX, 1, gyroTarget + tolerance);
@@ -889,7 +887,6 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, const rollAndPitchT
         }
 #endif
         float errorRate = currentPidSetpoint - gyroRate; // r - y
-
         handleCrashRecovery(
             pidProfile->crash_recovery, angleTrim, axis, currentTimeUs, gyroRate,
             &currentPidSetpoint, &errorRate);
