@@ -456,6 +456,78 @@ static FAST_RAM_ZERO_INIT int acroTrainerAxisState[2];  // only need roll and pi
 static FAST_RAM_ZERO_INIT float acroTrainerGain;
 #endif // USE_ACRO_TRAINER
 
+
+static float travel(float x0, float v0, float a, float t) 
+{
+    return x0 + v0 * t + 0.5f * a * t * t;
+}
+
+static float spSlope(int axis, float deflection)
+{
+    const float delta = 0.001f;
+    return (applyRates(axis, deflection, ABS(deflection)) -
+            applyRates(axis, deflection + delta, ABS(deflection + delta))) / delta;
+}
+
+static float SGN(float x) {
+    if (x > 0) return 1.0f;
+    if (x < 0) return -1.0f;
+    return 0.0f;
+}
+
+// v(t) = v0 - a t
+// t = v0 / a
+// x(t) = x0 + v0 t - 1/2 a t^2
+float calcDboost(int axis) 
+{
+    const float maxThumbAcceleration = 5.0f;
+    const float forwardWindow = 0.010f;
+    
+    static float oldSetpoint[XYZ_AXIS_COUNT];
+    const float setpoint = getSetpointRate(axis);
+    const float setpointChangeRate = (setpoint - oldSetpoint[axis]) * pidFrequency;
+    oldSetpoint[axis] = setpoint;
+
+    static float oldStick[XYZ_AXIS_COUNT];
+    const float stick = getRcDeflection(axis);
+    const float stickSpeed = (stick - oldStick[axis]) * pidFrequency;
+    const float maxBreakAcceleration = - SGN(stickSpeed) * maxThumbAcceleration;
+    const float stickStillTime = fabsf(stickSpeed) / maxThumbAcceleration;
+
+    float maxSpeedReduction;
+    float secondStick = stick;
+    
+    // if stick becomes still during forwardWindow speed has been fully eliminated
+    if (stickStillTime < forwardWindow) {
+        maxSpeedReduction = setpointChangeRate;
+    } else {
+        secondStick = travel( 
+            stick, stickSpeed, maxBreakAcceleration, forwardWindow);
+        // if close to max deflection or crossing zero full deceleration possible
+        if (secondStick > 0.95f || secondStick < -0.95f ||
+            secondStick * stick < 0 ) {
+            maxSpeedReduction = setpointChangeRate;
+        } else {
+            maxSpeedReduction =
+                (stickSpeed + maxBreakAcceleration * forwardWindow) * spSlope(axis, secondStick) -
+                setpointChangeRate;
+        }
+    }
+    float dboost = constrainf(fabsf(maxSpeedReduction) / 200.0f, 0.0f, 4.0f);
+    static float dboostReservoir[XYZ_AXIS_COUNT];
+    dboostReservoir[axis] -= dboostReservoir[axis] * dT / 0.000125 * 0.002f;
+    if (dboost > dboostReservoir[axis]) {
+        dboostReservoir[axis] = dboost;
+    }
+    if (axis == 0) {
+        DEBUG_SET(DEBUG_D_RELAX, 0, lrintf(dboost * 10.0f));
+        DEBUG_SET(DEBUG_D_RELAX, 1, lrintf(stick * 100.0f));
+        DEBUG_SET(DEBUG_D_RELAX, 2, lrintf(secondStick * 100.0f));
+        DEBUG_SET(DEBUG_D_RELAX, 3, lrintf(dboostReservoir[axis]));
+    }
+    return dboostReservoir[axis];
+}
+
 void pidUpdateAntiGravityThrottleFilter(float throttle)
 {
     if (antiGravityMode == ANTI_GRAVITY_SMOOTH) {
@@ -1178,6 +1250,7 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, const rollAndPitchT
                 detectAndSetCrashRecovery(pidProfile->crash_recovery, axis, currentTimeUs, delta, errorRate);
             }
 
+            calcDboost(axis);
             pidData[axis].D = pidCoefficient[axis].Kd * delta * tpaFactor;
         } else {
             pidData[axis].D = 0;

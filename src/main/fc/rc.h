@@ -20,6 +20,9 @@
 
 #pragma once
 
+typedef float (applyRatesFn)(const int axis, float rcCommandf, const float rcCommandfAbs);
+extern applyRatesFn *applyRates;
+
 typedef enum {
     INTERPOLATION_CHANNELS_RP,
     INTERPOLATION_CHANNELS_RPY,

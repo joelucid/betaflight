@@ -51,12 +51,11 @@
 
 #include "sensors/battery.h"
 
-typedef float (applyRatesFn)(const int axis, float rcCommandf, const float rcCommandfAbs);
+applyRatesFn *applyRates;
 
 static float setpointRate[3], rcDeflection[3], rcDeflectionAbs[3];
 static float throttlePIDAttenuation;
 static bool reverseMotors = false;
-static applyRatesFn *applyRates;
 uint16_t currentRxRefreshRate;
 
 FAST_RAM_ZERO_INIT uint8_t interpolationChannels;

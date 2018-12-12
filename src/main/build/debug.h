@@ -95,6 +95,7 @@ typedef enum {
     DEBUG_RC_SMOOTHING_RATE,
     DEBUG_ANTI_GRAVITY,
     DEBUG_DYN_LPF,
+    DEBUG_D_RELAX,
     DEBUG_COUNT
 } debugType_e;
 
