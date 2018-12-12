@@ -480,8 +480,8 @@ static float SGN(float x) {
 // x(t) = x0 + v0 t - 1/2 a t^2
 float calcDboost(int axis) 
 {
-    const float maxThumbAcceleration = 5.0f;
-    const float forwardWindow = 0.010f;
+    const float maxThumbAcceleration = 500.0f;
+    const float forwardWindow = 0.015f;
     
     static float oldSetpoint[XYZ_AXIS_COUNT];
     const float setpoint = getSetpointRate(axis);
@@ -491,6 +491,7 @@ float calcDboost(int axis)
     static float oldStick[XYZ_AXIS_COUNT];
     const float stick = getRcDeflection(axis);
     const float stickSpeed = (stick - oldStick[axis]) * pidFrequency;
+    oldStick[axis] = stick;
     const float maxBreakAcceleration = - SGN(stickSpeed) * maxThumbAcceleration;
     const float stickStillTime = fabsf(stickSpeed) / maxThumbAcceleration;
 
@@ -504,26 +505,31 @@ float calcDboost(int axis)
         secondStick = travel( 
             stick, stickSpeed, maxBreakAcceleration, forwardWindow);
         // if close to max deflection or crossing zero full deceleration possible
-        if (secondStick > 0.95f || secondStick < -0.95f ||
+        if (secondStick > 0.48f || secondStick < -0.48f ||
             secondStick * stick < 0 ) {
             maxSpeedReduction = setpointChangeRate;
         } else {
-            maxSpeedReduction =
+            const float speedChange =
                 (stickSpeed + maxBreakAcceleration * forwardWindow) * spSlope(axis, secondStick) -
                 setpointChangeRate;
+            if (speedChange * maxBreakAcceleration > 0) {
+                maxSpeedReduction = speedChange;
+            } else {
+                maxSpeedReduction = 0;
+            }
         }
     }
-    float dboost = constrainf(fabsf(maxSpeedReduction) / 200.0f, 0.0f, 4.0f);
+    float dboost = constrainf(fabsf(maxSpeedReduction) / 4000.0f, 0.0f, 4.0f);
     static float dboostReservoir[XYZ_AXIS_COUNT];
     dboostReservoir[axis] -= dboostReservoir[axis] * dT / 0.000125 * 0.002f;
     if (dboost > dboostReservoir[axis]) {
         dboostReservoir[axis] = dboost;
     }
     if (axis == 0) {
-        DEBUG_SET(DEBUG_D_RELAX, 0, lrintf(dboost * 10.0f));
+        DEBUG_SET(DEBUG_D_RELAX, 0, lrintf(dboost * 100.0f));
         DEBUG_SET(DEBUG_D_RELAX, 1, lrintf(stick * 100.0f));
         DEBUG_SET(DEBUG_D_RELAX, 2, lrintf(secondStick * 100.0f));
-        DEBUG_SET(DEBUG_D_RELAX, 3, lrintf(dboostReservoir[axis]));
+        DEBUG_SET(DEBUG_D_RELAX, 3, lrintf(dboostReservoir[axis] * 100.0f));
     }
     return dboostReservoir[axis];
 }
@@ -1250,8 +1256,8 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, const rollAndPitchT
                 detectAndSetCrashRecovery(pidProfile->crash_recovery, axis, currentTimeUs, delta, errorRate);
             }
 
-            calcDboost(axis);
-            pidData[axis].D = pidCoefficient[axis].Kd * delta * tpaFactor;
+            pidData[axis].D = (1.0f + calcDboost(axis)) *
+                pidCoefficient[axis].Kd * delta * tpaFactor;
         } else {
             pidData[axis].D = 0;
         }
