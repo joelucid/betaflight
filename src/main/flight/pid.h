@@ -156,6 +156,13 @@ typedef struct pidProfile_s {
     uint8_t launchControlAngleLimit;        // Optional launch control angle limit (requires ACC)
     uint8_t launchControlGain;              // Iterm gain used while launch control is active
     uint8_t launchControlAllowTriggerReset; // Controls trigger behavior and whether the trigger can be reset
+    
+    uint8_t dterm_boost_window;               // How far to look into the future
+    uint8_t dterm_boost_max;             // Maximum added dterm boost
+    uint8_t dterm_boost_acc;               // Maximum thumb acceleration
+    uint8_t dterm_boost_gain;            // How much boost to apply
+    uint8_t dterm_boost_relax;            // How quickly to fade boost
+     
 } pidProfile_t;
 
 PG_DECLARE_ARRAY(pidProfile_t, MAX_PROFILE_COUNT, pidProfiles);

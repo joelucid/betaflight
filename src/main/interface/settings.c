@@ -944,6 +944,12 @@ const clivalue_t valueTable[] = {
     { "launch_control_gain",        VAR_UINT8 | PROFILE_VALUE,  .config.minmax = { 0, 200 }, PG_PID_PROFILE, offsetof(pidProfile_t, launchControlGain) },
 #endif
 
+    { "dterm_boost_gain",           VAR_UINT8 | PROFILE_VALUE,  .config.minmax = { 0, 100 }, PG_PID_PROFILE, offsetof(pidProfile_t, dterm_boost_gain) },
+    { "dterm_boost_window",         VAR_UINT8 | PROFILE_VALUE,  .config.minmax = { 1, 30 }, PG_PID_PROFILE, offsetof(pidProfile_t, dterm_boost_window) },
+    { "dterm_boost_acc",            VAR_UINT8 | PROFILE_VALUE,  .config.minmax = { 0, 200 }, PG_PID_PROFILE, offsetof(pidProfile_t, dterm_boost_acc) },
+    { "dterm_boost_max",           VAR_UINT8 | PROFILE_VALUE,  .config.minmax = { 0, 100 }, PG_PID_PROFILE, offsetof(pidProfile_t, dterm_boost_max) },
+    { "dterm_boost_relax",           VAR_UINT8 | PROFILE_VALUE,  .config.minmax = { 1, 100 }, PG_PID_PROFILE, offsetof(pidProfile_t, dterm_boost_relax) },
+    
 // PG_TELEMETRY_CONFIG
 #ifdef USE_TELEMETRY
     { "tlm_inverted",               VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_TELEMETRY_CONFIG, offsetof(telemetryConfig_t, telemetry_inverted) },

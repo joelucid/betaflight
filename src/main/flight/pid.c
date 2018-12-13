@@ -178,6 +178,11 @@ void resetPidProfile(pidProfile_t *pidProfile)
         .launchControlAngleLimit = 0,
         .launchControlGain = 40,
         .launchControlAllowTriggerReset = true,
+        .dterm_boost_acc = 10,
+        .dterm_boost_window = 15,
+        .dterm_boost_gain = 10,
+        .dterm_boost_max = 40,
+        .dterm_boost_relax = 20,
     );
 #ifdef USE_DYN_LPF
     pidProfile->dterm_lowpass_hz = 150;
@@ -437,6 +442,13 @@ static FAST_RAM_ZERO_INIT uint8_t launchControlAngleLimit;
 static FAST_RAM_ZERO_INIT float launchControlKi;
 #endif
 
+static FAST_RAM_ZERO_INIT float dtermBoostWindow;
+static FAST_RAM_ZERO_INIT float dtermBoostGain;
+static FAST_RAM_ZERO_INIT float dtermBoostMax;
+static FAST_RAM_ZERO_INIT float dtermBoostAcc;
+static FAST_RAM_ZERO_INIT float dtermBoostRelax;
+
+
 void pidResetIterm(void)
 {
     for (int axis = 0; axis < 3; axis++) {
@@ -456,83 +468,6 @@ static FAST_RAM_ZERO_INIT int acroTrainerAxisState[2];  // only need roll and pi
 static FAST_RAM_ZERO_INIT float acroTrainerGain;
 #endif // USE_ACRO_TRAINER
 
-
-static float travel(float x0, float v0, float a, float t) 
-{
-    return x0 + v0 * t + 0.5f * a * t * t;
-}
-
-static float spSlope(int axis, float deflection)
-{
-    const float delta = 0.001f;
-    return (applyRates(axis, deflection, ABS(deflection)) -
-            applyRates(axis, deflection + delta, ABS(deflection + delta))) / delta;
-}
-
-static float SGN(float x) {
-    if (x > 0) return 1.0f;
-    if (x < 0) return -1.0f;
-    return 0.0f;
-}
-
-// v(t) = v0 - a t
-// t = v0 / a
-// x(t) = x0 + v0 t - 1/2 a t^2
-float calcDboost(int axis) 
-{
-    const float maxThumbAcceleration = 500.0f;
-    const float forwardWindow = 0.015f;
-    
-    static float oldSetpoint[XYZ_AXIS_COUNT];
-    const float setpoint = getSetpointRate(axis);
-    const float setpointChangeRate = (setpoint - oldSetpoint[axis]) * pidFrequency;
-    oldSetpoint[axis] = setpoint;
-
-    static float oldStick[XYZ_AXIS_COUNT];
-    const float stick = getRcDeflection(axis);
-    const float stickSpeed = (stick - oldStick[axis]) * pidFrequency;
-    oldStick[axis] = stick;
-    const float maxBreakAcceleration = - SGN(stickSpeed) * maxThumbAcceleration;
-    const float stickStillTime = fabsf(stickSpeed) / maxThumbAcceleration;
-
-    float maxSpeedReduction;
-    float secondStick = stick;
-    
-    // if stick becomes still during forwardWindow speed has been fully eliminated
-    if (stickStillTime < forwardWindow) {
-        maxSpeedReduction = setpointChangeRate;
-    } else {
-        secondStick = travel( 
-            stick, stickSpeed, maxBreakAcceleration, forwardWindow);
-        // if close to max deflection or crossing zero full deceleration possible
-        if (secondStick > 0.48f || secondStick < -0.48f ||
-            secondStick * stick < 0 ) {
-            maxSpeedReduction = setpointChangeRate;
-        } else {
-            const float speedChange =
-                (stickSpeed + maxBreakAcceleration * forwardWindow) * spSlope(axis, secondStick) -
-                setpointChangeRate;
-            if (speedChange * maxBreakAcceleration > 0) {
-                maxSpeedReduction = speedChange;
-            } else {
-                maxSpeedReduction = 0;
-            }
-        }
-    }
-    float dboost = constrainf(fabsf(maxSpeedReduction) / 4000.0f, 0.0f, 4.0f);
-    static float dboostReservoir[XYZ_AXIS_COUNT];
-    dboostReservoir[axis] -= dboostReservoir[axis] * dT / 0.000125 * 0.002f;
-    if (dboost > dboostReservoir[axis]) {
-        dboostReservoir[axis] = dboost;
-    }
-    if (axis == 0) {
-        DEBUG_SET(DEBUG_D_RELAX, 0, lrintf(dboost * 100.0f));
-        DEBUG_SET(DEBUG_D_RELAX, 1, lrintf(stick * 100.0f));
-        DEBUG_SET(DEBUG_D_RELAX, 2, lrintf(secondStick * 100.0f));
-        DEBUG_SET(DEBUG_D_RELAX, 3, lrintf(dboostReservoir[axis] * 100.0f));
-    }
-    return dboostReservoir[axis];
-}
 
 void pidUpdateAntiGravityThrottleFilter(float throttle)
 {
@@ -651,7 +586,98 @@ void pidInitConfig(const pidProfile_t *pidProfile)
     }
     launchControlKi = ITERM_SCALE * pidProfile->launchControlGain;
 #endif
+
+    dtermBoostAcc = pidProfile->dterm_boost_acc;
+    dtermBoostMax = pidProfile->dterm_boost_max / 10.0f;
+    dtermBoostGain = pidProfile->dterm_boost_gain / 100000.0f;
+    dtermBoostWindow = pidProfile->dterm_boost_window / 1000.0f;
+    dtermBoostRelax = pidProfile->dterm_boost_relax / 10000.0f;
 }
+
+static float travel(float x0, float v0, float a, float t) 
+{
+    return x0 + v0 * t + 0.5f * a * t * t;
+}
+
+static float spSlope(int axis, float deflection)
+{
+    const float delta = 0.001f;
+    return (applyRates(axis, deflection, ABS(deflection)) -
+            applyRates(axis, deflection + delta, ABS(deflection + delta))) / delta;
+}
+
+static float SGN(float x) {
+    if (x > 0) return 1.0f;
+    if (x < 0) return -1.0f;
+    return 0.0f;
+}
+
+// v(t) = v0 - a t
+// t = v0 / a
+// x(t) = x0 + v0 t - 1/2 a t^2
+float calcDboost(int axis) 
+{
+    const float maxThumbAcceleration = dtermBoostAcc;
+    const float forwardWindow = dtermBoostWindow;
+    
+    static float oldSetpoint[XYZ_AXIS_COUNT];
+    const float setpoint = getSetpointRate(axis);
+    const float setpointChangeRate = (setpoint - oldSetpoint[axis]) * pidFrequency;
+    oldSetpoint[axis] = setpoint;
+
+    static float oldStick[XYZ_AXIS_COUNT];
+    const float stick = getRcDeflection(axis);
+    const float stickSpeed = (stick - oldStick[axis]) * pidFrequency;
+    oldStick[axis] = stick;
+    const float maxBreakAcceleration = - SGN(stickSpeed) * maxThumbAcceleration;
+    const float stickStillTime = fabsf(stickSpeed) / maxThumbAcceleration;
+
+    float maxSpeedReduction;
+    float secondStick = stick;
+    
+    // if stick becomes still during forwardWindow speed has been fully eliminated
+    if (stickStillTime < forwardWindow) {
+        maxSpeedReduction = setpointChangeRate;
+        if (axis == 0) DEBUG_SET(DEBUG_D_RELAX, 3, 1);
+    } else {
+        const float extrapolatedStick = stick + stickSpeed * forwardWindow;
+        // if close to max deflection or crossing zero full deceleration possible
+        if (fabsf(extrapolatedStick) > 0.97f || extrapolatedStick * stick < 0.0f ) {
+            maxSpeedReduction = setpointChangeRate;
+            secondStick = extrapolatedStick;
+//            if (axis == 0) DEBUG_SET(DEBUG_D_RELAX, 0, lrintf(extrapolatedStick * stick * 100));
+            if (axis == 0) DEBUG_SET(DEBUG_D_RELAX, 3, 2);
+        } else {
+            secondStick = travel( 
+                stick, stickSpeed, maxBreakAcceleration, forwardWindow);
+            const float speedChange =
+                (stickSpeed + maxBreakAcceleration * forwardWindow) * spSlope(axis, secondStick) -
+                setpointChangeRate;
+            if (speedChange * maxBreakAcceleration > 0) {
+                maxSpeedReduction = speedChange;
+                if (axis == 0) DEBUG_SET(DEBUG_D_RELAX, 3, 3);
+            } else {
+                maxSpeedReduction = 0;
+                if (axis == 0) DEBUG_SET(DEBUG_D_RELAX, 3, 4);
+            }
+        }
+    }
+    float dboost = constrainf(fabsf(maxSpeedReduction) * dtermBoostGain, 0.0f, dtermBoostMax);
+    static float dboostReservoir[XYZ_AXIS_COUNT];
+    dboostReservoir[axis] -= dboostReservoir[axis] * dT / 0.000125 * dtermBoostRelax;
+    if (dboost > dboostReservoir[axis]) {
+        dboostReservoir[axis] = dboost;
+    }
+    if (axis == 0) {
+        DEBUG_SET(DEBUG_D_RELAX, 0, lrintf(dboost * 100.0f));
+//        DEBUG_SET(DEBUG_D_RELAX, 1, lrintf(stick * 100.0f));
+        DEBUG_SET(DEBUG_D_RELAX, 2, lrintf(secondStick * 100.0f));
+        DEBUG_SET(DEBUG_D_RELAX, 1, lrintf(dboostReservoir[axis] * 100.0f));
+    }
+    return dboostReservoir[axis];
+}
+
+
 
 void pidInit(const pidProfile_t *pidProfile)
 {
