@@ -157,6 +157,7 @@ typedef struct {
     timeDelta_t taskLatestDeltaTime;
     timeUs_t lastExecutedAt;        // last time of invocation
     timeUs_t lastSignaledAt;        // time of invocation event for event-driven tasks
+    timeUs_t lastDesiredAt;         // time of last desired execution
 
 #if defined(USE_TASK_STATISTICS)
     // Statistics

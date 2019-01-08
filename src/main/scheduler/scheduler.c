@@ -251,7 +251,7 @@ FAST_CODE void scheduler(void)
     // Check for realtime tasks
     bool outsideRealtimeGuardInterval = true;
     for (const cfTask_t *task = queueFirst(); task != NULL && task->staticPriority >= TASK_PRIORITY_REALTIME; task = queueNext()) {
-        const timeUs_t nextExecuteAt = task->lastExecutedAt + task->desiredPeriod;
+        const timeUs_t nextExecuteAt = task->lastDesiredAt + task->desiredPeriod;
         if ((timeDelta_t)(currentTimeUs - nextExecuteAt) >= 0) {
             outsideRealtimeGuardInterval = false;
             break;
@@ -299,7 +299,7 @@ FAST_CODE void scheduler(void)
         } else {
             // Task is time-driven, dynamicPriority is last execution age (measured in desiredPeriods)
             // Task age is calculated from last execution
-            task->taskAgeCycles = ((currentTimeUs - task->lastExecutedAt) / task->desiredPeriod);
+            task->taskAgeCycles = ((currentTimeUs - task->lastDesiredAt) / task->desiredPeriod);
             if (task->taskAgeCycles > 0) {
                 task->dynamicPriority = 1 + task->staticPriority * task->taskAgeCycles;
                 waitingTasks++;
@@ -327,6 +327,7 @@ FAST_CODE void scheduler(void)
         // Found a task that should be run
         selectedTask->taskLatestDeltaTime = currentTimeUs - selectedTask->lastExecutedAt;
         selectedTask->lastExecutedAt = currentTimeUs;
+        selectedTask->lastDesiredAt += (cmpTimeUs(currentTimeUs,selectedTask->lastDesiredAt) / selectedTask->desiredPeriod) * selectedTask->desiredPeriod;
         selectedTask->dynamicPriority = 0;
 
         // Execute task
