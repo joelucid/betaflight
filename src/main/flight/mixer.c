@@ -916,8 +916,20 @@ FAST_CODE_NOINLINE void mixTable(timeUs_t currentTimeUs, uint8_t vbatPidCompensa
     }
 #endif
 
+    static bool initialized;
+    static pt1Filter_t lpf;
+    static float airmodeDCOffset;
+    if (!initialized) { 
+        initialized = true;
+        pt1FilterInit(&lpf, pt1FilterGain(10, targetPidLooptime * 1e-6f));
+    }
+    
+    
     loggingThrottle = throttle;
+    throttle += airmodeDCOffset;
+    
     motorMixRange = motorMixMax - motorMixMin;
+    float airmodeChange = 0;
     if (motorMixRange > 1.0f) {
         for (int i = 0; i < motorCount; i++) {
             motorMix[i] /= motorMixRange;
@@ -928,10 +940,14 @@ FAST_CODE_NOINLINE void mixTable(timeUs_t currentTimeUs, uint8_t vbatPidCompensa
         }
     } else {
         if (airmodeEnabled || throttle > 0.5f) {  // Only automatically adjust throttle when airmode enabled. Airmode logic is always active on high throttle
+            float airmodeThrottle = constrainf(loggingThrottle, -motorMixMin, 1.0f - motorMixMax);
+            airmodeChange = constrainf(airmodeThrottle - loggingThrottle, -0.15f, 0.15f);
             throttle = constrainf(throttle, -motorMixMin, 1.0f - motorMixMax);
         }
     }
-
+    airmodeDCOffset = pt1FilterApply(&lpf, 2.0f * airmodeChange);
+    
+    
     if (featureIsEnabled(FEATURE_MOTOR_STOP)
         && ARMING_FLAG(ARMED)
         && !featureIsEnabled(FEATURE_3D)
