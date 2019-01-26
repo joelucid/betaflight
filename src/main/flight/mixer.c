@@ -946,6 +946,11 @@ FAST_CODE_NOINLINE void mixTable(timeUs_t currentTimeUs, uint8_t vbatPidCompensa
         }
     }
     airmodeDCOffset = pt1FilterApply(&lpf, 2.0f * airmodeChange);
+    if (airmodeChange > 0.0f && airmodeChange > airmodeDCOffset ||
+        airmodeChange < 0.0f && airmodeChange < airmodeDCOffset) {
+        airmodeDCOffset = airmodeChange;
+        lpf.state = airmodeDCOffset;
+    }
     
     
     if (featureIsEnabled(FEATURE_MOTOR_STOP)
