@@ -188,9 +188,11 @@ void resetPidProfile(pidProfile_t *pidProfile)
         .integrated_yaw_relax = 200,
         .thrustLinearization = 0,
         .dterm_cut_percent = 65,
-        .dterm_cut_gain = 15,
+        .dterm_cut_gyro_gain = 15,
+        .dterm_cut_setpoint_gain = 30,
         .dterm_cut_range_hz = 40,
         .dterm_cut_lowpass_hz = 7,
+        .ff_from_interpolated_sp = 0
     );
 #ifdef USE_DYN_LPF
     pidProfile->dterm_lowpass_hz = 150;
@@ -539,11 +541,13 @@ static FAST_RAM_ZERO_INIT uint16_t dynLpfMax;
 #ifdef USE_D_CUT
 static FAST_RAM_ZERO_INIT float dtermCutPercent;
 static FAST_RAM_ZERO_INIT float dtermCutPercentInv;
-static FAST_RAM_ZERO_INIT float dtermCutGain;
+static FAST_RAM_ZERO_INIT float dtermCutGyroGain;
+static FAST_RAM_ZERO_INIT float dtermCutSetpointGain;
 static FAST_RAM_ZERO_INIT float dtermCutRangeHz;
 static FAST_RAM_ZERO_INIT float dtermCutLowpassHz;
 #endif
 static FAST_RAM_ZERO_INIT float dtermCutFactor;
+static FAST_RAM_ZERO_INIT bool  ffFromInterpolatedSetpoint;
 
 void pidInitConfig(const pidProfile_t *pidProfile)
 {
@@ -668,10 +672,12 @@ void pidInitConfig(const pidProfile_t *pidProfile)
     dtermCutPercentInv = 1.0f - dtermCutPercent;
     dtermCutRangeHz = pidProfile->dterm_cut_range_hz;
     dtermCutLowpassHz = pidProfile->dterm_cut_lowpass_hz;
-    dtermCutGain = pidProfile->dterm_cut_gain * dtermCutPercent * D_CUT_GAIN_FACTOR / dtermCutLowpassHz;
+    dtermCutGyroGain = pidProfile->dterm_cut_gyro_gain * dtermCutPercent * D_CUT_GAIN_FACTOR / dtermCutLowpassHz;
+    dtermCutSetpointGain = pidProfile->dterm_cut_setpoint_gain * dtermCutPercent * D_CUT_GAIN_FACTOR / dtermCutLowpassHz;
     // lowpass included inversely in gain since stronger lowpass decreases peak effect
 #endif
     dtermCutFactor = 1.0f;
+    ffFromInterpolatedSetpoint = pidProfile->ff_from_interpolated_sp;
 }
 
 void pidInit(const pidProfile_t *pidProfile)
@@ -1283,6 +1289,29 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, const rollAndPitchT
 #endif
         pidData[axis].I = constrainf(iterm + Ki * itermErrorRate * dynCi, -itermLimit, itermLimit);
 
+        float pidSetpointDelta = 0;
+        if (ffFromInterpolatedSetpoint) {
+            static float oldRawSetpoint[XYZ_AXIS_COUNT];
+            static uint16_t interpolationSteps[XYZ_AXIS_COUNT];
+            static float setpointChangePerIteration[XYZ_AXIS_COUNT];
+            float rawSetpoint = getRawSetpoint(axis);
+            if (rawSetpoint != oldRawSetpoint[axis]) {
+                interpolationSteps[axis] = (uint16_t) ((currentRxRefreshRate + 1000) * pidFrequency * 1e-6f + 0.5f);
+                setpointChangePerIteration[axis] = (rawSetpoint - oldRawSetpoint[axis]) / interpolationSteps[axis];
+                oldRawSetpoint[axis] = rawSetpoint;
+            }
+            if (interpolationSteps[axis]) {
+                pidSetpointDelta = setpointChangePerIteration[axis];
+                interpolationSteps[axis]--;
+            }
+        }
+        else {
+            pidSetpointDelta = currentPidSetpoint - previousPidSetpoint[axis];
+        }
+#ifdef USE_RC_SMOOTHING_FILTER
+        pidSetpointDelta = applyRcSmoothingDerivativeFilter(axis, pidSetpointDelta);
+#endif // USE_RC_SMOOTHING_FILTER
+
         // -----calculate D component
         // disable D if launch control is active
         if ((pidCoefficient[axis].Kd > 0) && !launchControlActive){
@@ -1294,16 +1323,22 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, const rollAndPitchT
             // loop execution to be delayed.
             const float delta =
                 - (gyroRateDterm[axis] - previousGyroRateDterm[axis]) * pidFrequency;
+            const float setpointDelta = pidSetpointDelta * pidFrequency;
 
             if (cmpTimeUs(currentTimeUs, levelModeStartTimeUs) > CRASH_RECOVERY_DETECTION_DELAY_US) {
                 detectAndSetCrashRecovery(pidProfile->crash_recovery, axis, currentTimeUs, delta, errorRate);
             }
 #if defined(USE_D_CUT)
             if (dtermCutPercent){
-                dtermCutFactor = dtermCutRangeApplyFn((filter_t *) &dtermCutRange[axis], delta);
-                dtermCutFactor = fabsf(dtermCutFactor) * dtermCutGain;
-                dtermCutFactor = dtermCutLowpassApplyFn((filter_t *) &dtermCutLowpass[axis], dtermCutFactor);
-                dtermCutFactor = MIN(dtermCutFactor, 1.0f);
+                float gyroBoost = dtermCutRangeApplyFn((filter_t *) &dtermCutRange[axis], delta);
+                gyroBoost = fabsf(gyroBoost) * dtermCutGyroGain;
+                float setpointBoost = fabsf(setpointDelta) * dtermCutSetpointGain;
+                float boost = MAX(gyroBoost, setpointBoost);
+                dtermCutLowpassApplyFn((filter_t *) &dtermCutLowpass[axis], boost);
+                if (setpointBoost > dtermCutLowpass[axis].state) {
+                    dtermCutLowpass[axis].state = setpointBoost;
+                }
+                dtermCutFactor = MIN(dtermCutLowpass[axis].state, 1.0f);
                 dtermCutFactor = dtermCutPercentInv + (dtermCutFactor * dtermCutPercent);
             }
             if (axis == FD_ROLL) {
@@ -1329,12 +1364,6 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, const rollAndPitchT
 
             // no transition if feedForwardTransition == 0
             float transition = feedForwardTransition > 0 ? MIN(1.f, getRcDeflectionAbs(axis) * feedForwardTransition) : 1;
-
-            float pidSetpointDelta = currentPidSetpoint - previousPidSetpoint[axis];
-
-#ifdef USE_RC_SMOOTHING_FILTER
-            pidSetpointDelta = applyRcSmoothingDerivativeFilter(axis, pidSetpointDelta);
-#endif // USE_RC_SMOOTHING_FILTER
 
             pidData[axis].F = feedforwardGain * transition * pidSetpointDelta * pidFrequency;
 

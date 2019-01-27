@@ -43,3 +43,5 @@ bool rcSmoothingIsEnabled(void);
 int rcSmoothingGetValue(int whichValue);
 bool rcSmoothingAutoCalculate(void);
 bool rcSmoothingInitializationComplete(void);
+float getRawSetpoint(int axis);
+float getRawRcDeflection(int axis);
