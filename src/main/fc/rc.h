@@ -43,3 +43,7 @@ bool rcSmoothingIsEnabled(void);
 int rcSmoothingGetValue(int whichValue);
 bool rcSmoothingAutoCalculate(void);
 bool rcSmoothingInitializationComplete(void);
+#ifdef USE_FF_FROM_INTERPOLATED_SETPOINT
+float getRawSetpoint(int axis);
+float getRawRcDeflection(int axis);
+#endif

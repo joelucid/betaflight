@@ -61,6 +61,11 @@ uint16_t currentRxRefreshRate;
 
 FAST_RAM_ZERO_INIT uint8_t interpolationChannels;
 
+#ifdef USE_FF_FROM_INTERPOLATED_SETPOINT
+static float rawSetpoint[FD_YAW + 1];
+static float rawRcDeflection[FD_YAW + 1];
+#endif
+
 enum {
     ROLL_FLAG = 1 << ROLL,
     PITCH_FLAG = 1 << PITCH,
@@ -544,8 +549,19 @@ FAST_CODE void processRcCommand(void)
 {
     uint8_t updatedChannel;
 
-    if (isRXDataNew && pidAntiGravityEnabled()) {
-        checkForThrottleErrorResetState(currentRxRefreshRate);
+    if (isRXDataNew) {
+        if (pidAntiGravityEnabled()) {
+            checkForThrottleErrorResetState(currentRxRefreshRate);
+        }
+
+#ifdef USE_FF_FROM_INTERPOLATED_SETPOINT
+        for (int i = FD_ROLL; i <= FD_YAW; i++) {
+            const float rcCommandf = rcCommand[i] / 500.0f;
+            const float rcCommandfAbs = ABS(rcCommandf);
+            rawSetpoint[i] = applyRates(i, rcCommandf, rcCommandfAbs);
+            rawRcDeflection[i] = rcCommandf;
+        }
+#endif
     }
 
     switch (rxConfig()->rc_smoothing_type) {
@@ -767,3 +783,15 @@ bool rcSmoothingInitializationComplete(void) {
     return (rxConfig()->rc_smoothing_type != RC_SMOOTHING_TYPE_FILTER) || rcSmoothingData.filterInitialized;
 }
 #endif // USE_RC_SMOOTHING_FILTER
+
+#ifdef USE_FF_FROM_INTERPOLATED_SETPOINT
+float getRawSetpoint(int axis)
+{
+    return rawSetpoint[axis];
+}
+
+float getRawRcDeflection(int axis)
+{
+    return rawRcDeflection[axis];
+}
+#endif
