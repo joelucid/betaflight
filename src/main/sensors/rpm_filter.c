@@ -28,6 +28,7 @@
 #include "flight/mixer.h"
 #include "flight/pid.h"
 #include "pg/pg_ids.h"
+#include "scheduler/scheduler.h"
 #include "sensors/rpm_filter.h"
 #include "sensors/gyro.h"
 
@@ -67,11 +68,11 @@ void pgResetFn_rpmFilterConfig(rpmFilterConfig_t *config)
 {
     config->gyro_rpm_notch_harmonics = 3;
     config->gyro_rpm_notch_min = 100;
-    config->gyro_rpm_notch_q = 500;
+    config->gyro_rpm_notch_q = 1000;
 
-    config->dterm_rpm_notch_harmonics = 1;
+    config->dterm_rpm_notch_harmonics = 0;
     config->dterm_rpm_notch_min = 100;
-    config->dterm_rpm_notch_q = 500;
+    config->dterm_rpm_notch_q = 1000;
 }
 
 static void rpmNotchFilterInit(rpmNotchFilter_t* filter, int harmonics, int minHz, int q, float looptime)
@@ -121,6 +122,9 @@ void rpmFilterInit(const rpmFilterConfig_t *config)
     numberFilters = getMotorCount() * (filters[0].harmonics + filters[1].harmonics);
     const float filtersPerLoopIteration = numberFilters / loopIterationsPerUpdate;
     filterUpdatesPerIteration = rintf(filtersPerLoopIteration + 0.49f);
+    if (gyroFilter || dtermFilter) {
+        schedulerOptimizeRate(true);
+    }
 }
 
 static float applyFilter(rpmNotchFilter_t* filter, int axis, float value)
