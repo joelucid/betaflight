@@ -33,7 +33,7 @@
 #include "sensors/gyro.h"
 
 #define RPM_FILTER_MAXHARMONICS 3
-#define RPM_MOTOR_FILTER_CUTOFF 150
+#define RPM_MOTOR_FILTER_CUTOFF 250
 #define SECONDS_PER_MINUTE      60.0f
 #define ERPM_PER_LSB            100.0f
 #define MIN_UPDATE_T            0.001f
