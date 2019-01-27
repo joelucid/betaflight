@@ -1133,9 +1133,10 @@ STATIC_UNIT_TESTED void applyItermRelax(const int axis, const float iterm,
 #ifdef USE_AIRMODE_LPF
 void pidUpdateAirmodeLpf(float currentOffset)
 {
+    if (airmodeThrottleOffsetLimit == 0.0f) return;
     currentOffset = constrainf(currentOffset, -airmodeThrottleOffsetLimit, airmodeThrottleOffsetLimit);
     // During high frequency oscillation 2 * currentOffset averages to the offset required to avoid mirroring of the waveform
-    pt1FilterApply(&airmodeThrottleLpf, currentOffset * 2.0f);
+    pt1FilterApply(&airmodeThrottleLpf, currentOffset * 2.5f);
     // Bring offset up immediately so the filter only applies to the decline
     if (currentOffset * airmodeThrottleLpf.state >= 0 && fabsf(currentOffset) > airmodeThrottleLpf.state) {
         airmodeThrottleLpf.state = currentOffset;
