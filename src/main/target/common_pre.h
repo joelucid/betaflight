@@ -249,6 +249,7 @@
 #endif // FLASH_SIZE > 128
 
 #if (FLASH_SIZE > 256)
+#define USE_AIRMODE_LPF
 #define USE_DASHBOARD
 #define USE_GPS
 #define USE_GPS_NMEA
