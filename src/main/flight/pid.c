@@ -1134,13 +1134,22 @@ STATIC_UNIT_TESTED void applyItermRelax(const int axis, const float iterm,
 void pidUpdateAirmodeLpf(float currentOffset)
 {
     if (airmodeThrottleOffsetLimit == 0.0f) return;
-    currentOffset = constrainf(currentOffset, -airmodeThrottleOffsetLimit, airmodeThrottleOffsetLimit);
     // During high frequency oscillation 2 * currentOffset averages to the offset required to avoid mirroring of the waveform
-    pt1FilterApply(&airmodeThrottleLpf, currentOffset * 2.5f);
+    static pt1Filter_t lpf2;
+    static bool inited;
+    if (!inited) {
+        inited = true;
+        pt1FilterInit(&lpf2, pt1FilterGain(20, dT));
+    }
+    float offset = currentOffset * 2.5f;
+    offset = offset - pt1FilterApply(&lpf2, offset);
+    
+    pt1FilterApply(&airmodeThrottleLpf, offset);
     // Bring offset up immediately so the filter only applies to the decline
     if (currentOffset * airmodeThrottleLpf.state >= 0 && fabsf(currentOffset) > airmodeThrottleLpf.state) {
         airmodeThrottleLpf.state = currentOffset;
     }
+    airmodeThrottleLpf.state = constrainf(airmodeThrottleLpf.state, -airmodeThrottleOffsetLimit, airmodeThrottleOffsetLimit);
 }
 
 float pidGetAirmodeThrottleOffset()
@@ -1319,7 +1328,29 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, const rollAndPitchT
 #endif
         pidData[axis].I = constrainf(iterm + Ki * itermErrorRate * dynCi, -itermLimit, itermLimit);
 
-        // -----calculate D component
+        float pidSetpointDelta = 0;
+#ifdef USE_FF_FROM_INTERPOLATED_SETPOINT
+        static float oldRawSetpoint[XYZ_AXIS_COUNT];
+        static uint16_t interpolationSteps[XYZ_AXIS_COUNT];
+        static float setpointChangePerIteration[XYZ_AXIS_COUNT];
+        float rawSetpoint = getRawSetpoint(axis);
+        if (rawSetpoint != oldRawSetpoint[axis]) {
+            interpolationSteps[axis] = (uint16_t) ((currentRxRefreshRate + 1000) * pidFrequency * 1e-6f + 0.5f);
+            setpointChangePerIteration[axis] = (rawSetpoint - oldRawSetpoint[axis]) / interpolationSteps[axis];
+                oldRawSetpoint[axis] = rawSetpoint;
+        }
+        if (interpolationSteps[axis]) {
+            pidSetpointDelta = setpointChangePerIteration[axis];
+            interpolationSteps[axis]--;
+        }
+#else
+        pidSetpointDelta = currentPidSetpoint - previousPidSetpoint[axis];
+#endif            
+#ifdef USE_RC_SMOOTHING_FILTER
+            pidSetpointDelta = applyRcSmoothingDerivativeFilter(axis, pidSetpointDelta);
+#endif // USE_RC_SMOOTHING_FILTER
+
+       // -----calculate D component
         // disable D if launch control is active
         if ((pidCoefficient[axis].Kd > 0) && !launchControlActive){
 
@@ -1331,14 +1362,23 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, const rollAndPitchT
             const float delta =
                 - (gyroRateDterm[axis] - previousGyroRateDterm[axis]) * pidFrequency;
 
+            const float deltaStick = - pidSetpointDelta * pidFrequency;
+            
             if (cmpTimeUs(currentTimeUs, levelModeStartTimeUs) > CRASH_RECOVERY_DETECTION_DELAY_US) {
                 detectAndSetCrashRecovery(pidProfile->crash_recovery, axis, currentTimeUs, delta, errorRate);
             }
 #if defined(USE_D_CUT)
             if (dtermCutPercent){
-                dtermCutFactor = dtermCutRangeApplyFn((filter_t *) &dtermCutRange[axis], delta);
+                dtermCutFactor = deltaStick;
+//                dtermCutFactor = dtermCutRangeApplyFn((filter_t *) &dtermCutRange[axis], delta);
                 dtermCutFactor = fabsf(dtermCutFactor) * dtermCutGain;
-                dtermCutFactor = dtermCutLowpassApplyFn((filter_t *) &dtermCutLowpass[axis], dtermCutFactor);
+                pt1FilterApply(&dtermCutLowpass[axis], dtermCutFactor);
+                if (dtermCutFactor > dtermCutLowpass[axis].state) {
+                    dtermCutLowpass[axis].state = dtermCutFactor;
+                }
+                dtermCutFactor = dtermCutLowpass[axis].state;
+                
+//                dtermCutFactor = dtermCutLowpassApplyFn((filter_t *) &dtermCutLowpass[axis], dtermCutFactor);
                 dtermCutFactor = MIN(dtermCutFactor, 1.0f);
                 dtermCutFactor = dtermCutPercentInv + (dtermCutFactor * dtermCutPercent);
             }
@@ -1365,29 +1405,6 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, const rollAndPitchT
 
             // no transition if feedForwardTransition == 0
             float transition = feedForwardTransition > 0 ? MIN(1.f, getRcDeflectionAbs(axis) * feedForwardTransition) : 1;
-
-            float pidSetpointDelta = 0;
-#ifdef USE_FF_FROM_INTERPOLATED_SETPOINT
-            static float oldRawSetpoint[XYZ_AXIS_COUNT];
-            static float interpolationSteps[XYZ_AXIS_COUNT];
-            static float setpointChangePerIteration[XYZ_AXIS_COUNT];
-            float rawSetpoint = getRawSetpoint(axis);
-            if (rawSetpoint != oldRawSetpoint[axis]) {
-                oldRawSetpoint[axis] = rawSetpoint;
-                interpolationSteps[axis] += (currentRxRefreshRate + 1000) * pidFrequency * 1e-6f;
-                setpointChangePerIteration[axis] = (rawSetpoint - oldRawSetpoint[axis]) / interpolationSteps[axis];
-            }
-            if (interpolationSteps[axis]) {
-                pidSetpointDelta = setpointChangePerIteration[axis];
-                interpolationSteps[axis]--;
-            }
-#else
-            pidSetpointDelta = currentPidSetpoint - previousPidSetpoint[axis];
-#endif            
-
-#ifdef USE_RC_SMOOTHING_FILTER
-            pidSetpointDelta = applyRcSmoothingDerivativeFilter(axis, pidSetpointDelta);
-#endif // USE_RC_SMOOTHING_FILTER
 
             pidData[axis].F = feedforwardGain * transition * pidSetpointDelta * pidFrequency;
 

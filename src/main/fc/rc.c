@@ -62,8 +62,8 @@ uint16_t currentRxRefreshRate;
 FAST_RAM_ZERO_INIT uint8_t interpolationChannels;
 
 #ifdef USE_FF_FROM_INTERPOLATED_SETPOINT
-static float rawSetpoint[FD_YAW + 1];
-static float rawRcDeflection[FD_YAW + 1];
+static float rawSetpoint[XYZ_AXIS_COUNT];
+static float rawRcDeflection[XYZ_AXIS_COUNT];
 #endif
 
 enum {
