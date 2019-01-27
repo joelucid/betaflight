@@ -1366,7 +1366,24 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, const rollAndPitchT
             // no transition if feedForwardTransition == 0
             float transition = feedForwardTransition > 0 ? MIN(1.f, getRcDeflectionAbs(axis) * feedForwardTransition) : 1;
 
-            float pidSetpointDelta = currentPidSetpoint - previousPidSetpoint[axis];
+            float pidSetpointDelta = 0;
+#ifdef USE_FF_FROM_INTERPOLATED_SETPOINT
+            static float oldRawSetpoint[XYZ_AXIS_COUNT];
+            static float interpolationSteps[XYZ_AXIS_COUNT];
+            static float setpointChangePerIteration[XYZ_AXIS_COUNT];
+            float rawSetpoint = getRawSetpoint(axis);
+            if (rawSetpoint != oldRawSetpoint[axis]) {
+                oldRawSetpoint[axis] = rawSetpoint;
+                interpolationSteps[axis] += (currentRxRefreshRate + 1000) * pidFrequency * 1e-6f;
+                setpointChangePerIteration[axis] = (rawSetpoint - oldRawSetpoint[axis]) / interpolationSteps[axis];
+            }
+            if (interpolationSteps[axis]) {
+                pidSetpointDelta = setpointChangePerIteration[axis];
+                interpolationSteps[axis]--;
+            }
+#else
+            pidSetpointDelta = currentPidSetpoint - previousPidSetpoint[axis];
+#endif            
 
 #ifdef USE_RC_SMOOTHING_FILTER
             pidSetpointDelta = applyRcSmoothingDerivativeFilter(axis, pidSetpointDelta);
