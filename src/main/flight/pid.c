@@ -290,7 +290,8 @@ static FAST_RAM_ZERO_INIT uint8_t rcSmoothingFilterType;
 #endif // USE_RC_SMOOTHING_FILTER
 
 #ifdef USE_AIRMODE_LPF
-static FAST_RAM_ZERO_INIT pt1Filter_t airmodeThrottleLpf;
+static FAST_RAM_ZERO_INIT pt1Filter_t airmodeThrottleLpf1;
+static FAST_RAM_ZERO_INIT pt1Filter_t airmodeThrottleLpf2;
 #endif
 
 static FAST_RAM_ZERO_INIT pt1Filter_t antiGravityThrottleLpf;
@@ -425,7 +426,8 @@ void pidInitFilters(const pidProfile_t *pidProfile)
 #endif
 #if defined(USE_AIRMODE_LPF)
     if (pidProfile->airmode_noise_reduction) {
-        pt1FilterInit(&airmodeThrottleLpf, pt1FilterGain(10.0f, dT));
+        pt1FilterInit(&airmodeThrottleLpf1, pt1FilterGain(7.0f, dT));
+        pt1FilterInit(&airmodeThrottleLpf2, pt1FilterGain(20.0f, dT));
     }
 #endif
 
@@ -1133,19 +1135,25 @@ STATIC_UNIT_TESTED void applyItermRelax(const int axis, const float iterm,
 #ifdef USE_AIRMODE_LPF
 void pidUpdateAirmodeLpf(float currentOffset)
 {
-    if (airmodeThrottleOffsetLimit == 0.0f) return;
-    currentOffset = constrainf(currentOffset, -airmodeThrottleOffsetLimit, airmodeThrottleOffsetLimit);
-    // During high frequency oscillation 2 * currentOffset averages to the offset required to avoid mirroring of the waveform
-    pt1FilterApply(&airmodeThrottleLpf, currentOffset * 2.5f);
-    // Bring offset up immediately so the filter only applies to the decline
-    if (currentOffset * airmodeThrottleLpf.state >= 0 && fabsf(currentOffset) > airmodeThrottleLpf.state) {
-        airmodeThrottleLpf.state = currentOffset;
+    if (airmodeThrottleOffsetLimit == 0.0f) {
+        return;
     }
+    
+    float offsetHpf = currentOffset * 2.5f;
+    offsetHpf = offsetHpf - pt1FilterApply(&airmodeThrottleLpf2, offsetHpf);
+
+    // During high frequency oscillation 2 * currentOffset averages to the offset required to avoid mirroring of the waveform
+    pt1FilterApply(&airmodeThrottleLpf1, offsetHpf);
+    // Bring offset up immediately so the filter only applies to the decline
+    if (currentOffset * airmodeThrottleLpf1.state >= 0 && fabsf(currentOffset) > airmodeThrottleLpf1.state) {
+        airmodeThrottleLpf1.state = currentOffset;
+    }
+    airmodeThrottleLpf1.state = constrainf(airmodeThrottleLpf1.state, -airmodeThrottleOffsetLimit, airmodeThrottleOffsetLimit);
 }
 
 float pidGetAirmodeThrottleOffset()
 {
-    return airmodeThrottleLpf.state;
+    return airmodeThrottleLpf1.state;
 }
 #endif
 
