@@ -1022,6 +1022,9 @@ const clivalue_t valueTable[] = {
 #ifdef USE_THRUST_LINEARIZATION
     { "thrust_linear",              VAR_UINT8 | MASTER_VALUE, .config.minmax = { 0, 100 }, PG_PID_PROFILE, offsetof(pidProfile_t, thrustLinearization) },
 #endif
+#ifdef USE_AIRMODE_LPF
+    { "airmode_noise_reduction",    VAR_UINT8 | MASTER_VALUE, .config.minmax = { 0, 30 }, PG_PID_PROFILE, offsetof(pidProfile_t, airmode_noise_reduction) },
+#endif
 
 // PG_TELEMETRY_CONFIG
 #ifdef USE_TELEMETRY
