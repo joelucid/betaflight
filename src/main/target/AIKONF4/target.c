@@ -30,14 +30,26 @@
 const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     DEF_TIM(TIM2,  CH2,  PB3,  TIM_USE_CAMERA_CONTROL,      0, 0), // CAMERA_CONTROL_PIN
 
+
+    // XXX(fujin): dshot_bidir compatible motors (one dma stream per motor)
+    // M1 (DMA1 Stream 4)
+    DEF_TIM(TIM3,  CH1,  PC6,  TIM_USE_MOTOR,               0, 0),
+    // M2 (DMA2 Stream 2)
+    DEF_TIM(TIM8,  CH2,  PC7,  TIM_USE_MOTOR,               0, 0),
+    // M3 (DMA1 Stream 7)
+    DEF_TIM(TIM3,  CH3,  PC8,  TIM_USE_MOTOR,               0, 0),
+    // m4 (DMA1 Stream 2)
+    DEF_TIM(TIM3,  CH4,  PC9,  TIM_USE_MOTOR,               0, 0),
+
+    // XXX(fujin): dshot_burst compatible motors:
     // TIM8_UP (DMA2_ST1_CH7)
-    DEF_TIM(TIM8,  CH1,  PC6,  TIM_USE_MOTOR,               0, 0), // M1
-    DEF_TIM(TIM8,  CH2,  PC7,  TIM_USE_MOTOR,               0, 0), // M2
-    DEF_TIM(TIM8,  CH3,  PC8,  TIM_USE_MOTOR,               0, 0), // M3
-    DEF_TIM(TIM8,  CH4,  PC9,  TIM_USE_MOTOR,               0, 0), // M4
-    // TIM3_UP (DMA1_ST2_CH5)
-    DEF_TIM(TIM3,  CH3,  PB0,  TIM_USE_MOTOR,               0, 0), // M5
-    DEF_TIM(TIM3,  CH4,  PB1,  TIM_USE_MOTOR,               0, 0), // M6
+    /* DEF_TIM(TIM8,  CH1,  PC6,  TIM_USE_MOTOR,               0, 0), // M1 */
+    /* DEF_TIM(TIM8,  CH2,  PC7,  TIM_USE_MOTOR,               0, 0), // M2 */
+    /* DEF_TIM(TIM8,  CH3,  PC8,  TIM_USE_MOTOR,               0, 0), // M3 */
+    /* DEF_TIM(TIM8,  CH4,  PC9,  TIM_USE_MOTOR,               0, 0), // M4 */
+    /* // TIM3_UP (DMA1_ST2_CH5) */
+    /* DEF_TIM(TIM3,  CH3,  PB0,  TIM_USE_MOTOR,               0, 0), // M5 */
+    /* DEF_TIM(TIM3,  CH4,  PB1,  TIM_USE_MOTOR,               0, 0), // M6 */
 
     // backdoor timers
     DEF_TIM(TIM1,  CH2,  PA9,  TIM_USE_ANY,                 0, 0), // UART1_TX
