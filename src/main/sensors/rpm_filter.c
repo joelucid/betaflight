@@ -33,7 +33,6 @@
 #include "sensors/gyro.h"
 
 #define RPM_FILTER_MAXHARMONICS 3
-#define RPM_MOTOR_FILTER_CUTOFF 250
 #define SECONDS_PER_MINUTE      60.0f
 #define ERPM_PER_LSB            100.0f
 #define MIN_UPDATE_T            0.001f
@@ -73,6 +72,8 @@ void pgResetFn_rpmFilterConfig(rpmFilterConfig_t *config)
     config->dterm_rpm_notch_harmonics = 0;
     config->dterm_rpm_notch_min = 100;
     config->dterm_rpm_notch_q = 1000;
+
+    config->motor_filter_hz = 250;
 }
 
 static void rpmNotchFilterInit(rpmNotchFilter_t* filter, int harmonics, int minHz, int q, float looptime)
@@ -113,7 +114,7 @@ void rpmFilterInit(const rpmFilterConfig_t *config)
     }
 
     for (int i = 0; i < getMotorCount(); i++) {
-        pt1FilterInit(&rpmFilters[i], pt1FilterGain(RPM_MOTOR_FILTER_CUTOFF, pidLooptime));
+        pt1FilterInit(&rpmFilters[i], pt1FilterGain(config->motor_filter_hz, pidLooptime));
     }
 
     erpmToHz = ERPM_PER_LSB / SECONDS_PER_MINUTE  / (motorConfig()->motorPoleCount / 2.0f);
