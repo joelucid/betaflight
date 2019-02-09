@@ -105,8 +105,8 @@ void pwmWriteDshotInt(uint8_t index, uint16_t value)
     {
         bufferSize = loadDmaBuffer(motor->dmaBuffer, 1, packet);
         motor->timer->timerDmaSources |= motor->timerDmaSource;
-        DMA_SetCurrDataCounter(motor->timerHardware->dmaRef, bufferSize);
-        DMA_Cmd(motor->timerHardware->dmaRef, ENABLE);
+        DMA_SetCurrDataCounter(motor->dmaRef, bufferSize);
+        DMA_Cmd(motor->dmaRef, ENABLE);
     }
 }
 
