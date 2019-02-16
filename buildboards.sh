@@ -4,6 +4,8 @@ targets=(
     "AIKONF4" \
     "CLRACINGF4" \
     "REVOLT" \
+    "NOX" \
+    "PYRODRONEF4" \
 )
 
 
