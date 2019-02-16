@@ -364,6 +364,8 @@ targets-group-4: $(GROUP_4_TARGETS)
 ## targets-group-rest: build the rest of the targets (not listed in group 1, 2 or 3)
 targets-group-rest: $(GROUP_OTHER_TARGETS)
 
+bidir-group: $(BIDIR_TARGETS)
+
 $(VALID_TARGETS):
 	$(V0) @echo "Building $@" && \
 	$(MAKE) binary hex TARGET=$@ && \
