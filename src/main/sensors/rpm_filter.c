@@ -63,6 +63,8 @@ static rpmNotchFilter_t* gyroFilter;
 static rpmNotchFilter_t* dtermFilter;
 static float   maxFrequency;
 
+static float   kx, kv;
+
 PG_REGISTER_WITH_RESET_FN(rpmFilterConfig_t, rpmFilterConfig, PG_RPM_FILTER_CONFIG, 3);
 
 void pgResetFn_rpmFilterConfig(rpmFilterConfig_t *config)
@@ -115,9 +117,9 @@ void rpmFilterInit(const rpmFilterConfig_t *config)
                            config->dterm_rpm_notch_min, config->dterm_rpm_notch_q, pidLooptime);
     }
 
-    for (int i = 0; i < getMotorCount(); i++) {
-        pt1FilterInit(&rpmFilters[i], pt1FilterGain(config->rpm_lpf, pidLooptime));
-    }
+    /* for (int i = 0; i < getMotorCount(); i++) { */
+    /*     pt1FilterInit(&rpmFilters[i], pt1FilterGain(config->rpm_lpf, pidLooptime * 1e-6f)); */
+    /* } */
 
     erpmToHz = ERPM_PER_LSB / SECONDS_PER_MINUTE  / (motorConfig()->motorPoleCount / 2.0f);
 
@@ -126,6 +128,8 @@ void rpmFilterInit(const rpmFilterConfig_t *config)
     const float filtersPerLoopIteration = numberFilters / loopIterationsPerUpdate;
     filterUpdatesPerIteration = rintf(filtersPerLoopIteration + 0.49f);
     maxFrequency = 0.5f / (gyro.targetLooptime * 1e-6f);
+    kx = pt1FilterGain(config->rpm_lpf, pidLooptime * 1e-6f);
+    kv = pt1FilterGain(config->rpm_lpf, pidLooptime * 1e-6f);
 }
 
 static float applyFilter(rpmNotchFilter_t* filter, int axis, float value)
@@ -160,9 +164,18 @@ void rpmFilterUpdate()
     }
 
     for (int motor = 0; motor < getMotorCount(); motor++) {
-        filteredMotorErpm[motor] = pt1FilterApply(&rpmFilters[motor], getDshotTelemetry(motor));
-        if (motor < 4) {
-            DEBUG_SET(DEBUG_RPM_FILTER, motor, motorFrequency[motor]);
+        static float x[MAX_SUPPORTED_MOTORS];
+        static float v[MAX_SUPPORTED_MOTORS];
+        float newx = getDshotTelemetry(motor);
+        float xcur = x[motor];
+        x[motor] += v[motor] + kx * (newx - x[motor] - v[motor]);
+        v[motor] += kv * ((x[motor] - xcur) - v[motor]);
+
+        filteredMotorErpm[motor] = x[motor]; //pt1FilterApply(&rpmFilters[motor], getDshotTelemetry(motor));
+        if (motor == 2) {
+            DEBUG_SET(DEBUG_RPM_FILTER, 0, getDshotTelemetry(motor));
+            DEBUG_SET(DEBUG_RPM_FILTER, 1, x[motor]);
+            DEBUG_SET(DEBUG_RPM_FILTER, 2, v[motor]);
         }
     }
 
