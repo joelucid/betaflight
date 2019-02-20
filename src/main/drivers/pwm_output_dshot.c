@@ -46,34 +46,7 @@
 #include <string.h>
 #endif
 
-static uint8_t dmaMotorTimerCount = 0;
-static motorDmaTimer_t dmaMotorTimers[MAX_DMA_TIMERS];
-static motorDmaOutput_t dmaMotors[MAX_SUPPORTED_MOTORS];
-
-#ifdef USE_DSHOT_TELEMETRY
-uint32_t readDoneCount;
-
-// TODO remove once debugging no longer needed
-uint32_t dshotInvalidPacketCount;
-uint32_t  inputBuffer[DSHOT_TELEMETRY_INPUT_LEN];
-uint32_t setDirectionMicros;
-#endif
-
-motorDmaOutput_t *getMotorDmaOutput(uint8_t index)
-{
-    return &dmaMotors[index];
-}
-
-uint8_t getTimerIndex(TIM_TypeDef *timer)
-{
-    for (int i = 0; i < dmaMotorTimerCount; i++) {
-        if (dmaMotorTimers[i].timer == timer) {
-            return i;
-        }
-    }
-    dmaMotorTimers[dmaMotorTimerCount++].timer = timer;
-    return dmaMotorTimerCount - 1;
-}
+#include "pwm_output_dshot_shared.h"
 
 void pwmWriteDshotInt(uint8_t index, uint16_t value)
 {
@@ -118,55 +91,6 @@ static void processInputIrq(motorDmaOutput_t * const motor)
     DMA_Cmd(motor->timerHardware->dmaRef, DISABLE);
     TIM_DMACmd(motor->timerHardware->tim, motor->timerDmaSource, DISABLE);
     readDoneCount++;
-}
-
-static uint16_t decodeDshotPacket(uint32_t buffer[])
-{
-    uint32_t value = 0;
-    for (int i = 1; i < DSHOT_TELEMETRY_INPUT_LEN; i += 2) {
-        int diff = buffer[i] - buffer[i-1];
-        value <<= 1;
-        if (diff > 0) {
-            if (diff >= 11) value |= 1;
-        } else {
-            if (diff >= -9) value |= 1;
-        }
-    }
-    
-    uint32_t csum = value;
-    csum = csum ^ (csum >> 8); // xor bytes
-    csum = csum ^ (csum >> 4); // xor nibbles
-
-    if (csum & 0xf) {
-        return 0xffff;
-    }
-    return value >> 4;
-}
-
-static uint16_t decodeProshotPacket(uint32_t buffer[])
-{
-    uint32_t value = 0;
-    for (int i = 1; i < PROSHOT_TELEMETRY_INPUT_LEN; i += 2) {
-        const int proshotModulo = MOTOR_NIBBLE_LENGTH_PROSHOT;
-        int diff = ((buffer[i] + proshotModulo - buffer[i-1]) % proshotModulo) - PROSHOT_BASE_SYMBOL;
-        int nibble;
-        if (diff < 0) {
-            nibble = 0;
-        } else {
-            nibble = (diff + PROSHOT_BIT_WIDTH / 2) / PROSHOT_BIT_WIDTH;
-        }
-        value <<= 4;
-        value |= (nibble & 0xf);
-    }
-
-    uint32_t csum = value;
-    csum = csum ^ (csum >> 8); // xor bytes
-    csum = csum ^ (csum >> 4); // xor nibbles
-
-    if (csum & 0xf) {
-        return 0xffff;
-    }
-    return value >> 4;
 }
 
 #endif
