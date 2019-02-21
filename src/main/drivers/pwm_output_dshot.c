@@ -93,6 +93,17 @@ static void processInputIrq(motorDmaOutput_t * const motor)
     readDoneCount++;
 }
 
+static void enableChannels(uint8_t motorCount)
+{
+    for (int i = 0; i < motorCount; i++) {
+        if (dmaMotors[i].output & TIMER_OUTPUT_N_CHANNEL) {
+            TIM_CCxNCmd(dmaMotors[i].timerHardware->tim, dmaMotors[i].timerHardware->channel, TIM_CCxN_Enable);
+        } else {
+            TIM_CCxCmd(dmaMotors[i].timerHardware->tim, dmaMotors[i].timerHardware->channel, TIM_CCx_Enable);
+        }
+    }
+}
+
 #endif
 
 static void motor_DMA_IRQHandler(dmaChannelDescriptor_t *descriptor);
@@ -178,49 +189,6 @@ inline FAST_CODE static void pwmDshotSetDirectionOutput(
     DMA_ITConfig(dmaRef, DMA_IT_TC, ENABLE);
 }
 
-#ifdef USE_DSHOT_TELEMETRY
-
-void pwmStartDshotMotorUpdate(uint8_t motorCount)
-{
-    if (useDshotTelemetry) {
-        for (int i = 0; i < motorCount; i++) {
-            if (dmaMotors[i].hasTelemetry) {
-                uint16_t value = dmaMotors[i].useProshot ?
-                    decodeProshotPacket(dmaMotors[i].dmaBuffer) :
-                    decodeDshotPacket(dmaMotors[i].dmaBuffer);
-                if (value != 0xffff) {
-                    dmaMotors[i].dshotTelemetryValue = value;
-                    if (i < 4) {
-                        DEBUG_SET(DEBUG_DSHOT_RPM_TELEMETRY, i, value);
-                    }
-                } else {
-                    dshotInvalidPacketCount++;
-                    if (i == 0) {
-                        memcpy(inputBuffer,dmaMotors[i].dmaBuffer,sizeof(inputBuffer));
-                    }
-                }
-                dmaMotors[i].hasTelemetry = false;
-            } else {
-                TIM_DMACmd(dmaMotors[i].timerHardware->tim, dmaMotors[i].timerDmaSource, DISABLE);
-            }
-            pwmDshotSetDirectionOutput(&dmaMotors[i], true);
-        }
-        for (int i = 0; i < motorCount; i++) {
-            if (dmaMotors[i].output & TIMER_OUTPUT_N_CHANNEL) {
-                TIM_CCxNCmd(dmaMotors[i].timerHardware->tim, dmaMotors[i].timerHardware->channel, TIM_CCxN_Enable);
-            } else {
-                TIM_CCxCmd(dmaMotors[i].timerHardware->tim, dmaMotors[i].timerHardware->channel, TIM_CCx_Enable);
-            }
-        }
-    }
-}
-
-uint16_t getDshotTelemetry(uint8_t index)
-{
-    return dmaMotors[index].dshotTelemetryValue;
-}
-
-#endif
 
 void pwmCompleteDshotMotorUpdate(uint8_t motorCount)
 {
