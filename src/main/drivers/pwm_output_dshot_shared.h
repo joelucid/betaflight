@@ -125,9 +125,19 @@ void pwmStartDshotMotorUpdate(uint8_t motorCount)
     if (useDshotTelemetry) {
         for (int i = 0; i < motorCount; i++) {
             if (dmaMotors[i].hasTelemetry) {
-                uint16_t value = dmaMotors[i].useProshot ?
-                    decodeProshotPacket(dmaMotors[i].dmaBuffer) :
-                    decodeDshotPacket(dmaMotors[i].dmaBuffer);
+#ifdef STM32F7
+                uint32_t edges = LL_EX_DMA_GetDataLength(dmaMotors[i].dmaRef);
+#else
+                uint32_t edges = DMA_GetCurrDataCounter(motor->dmaRef);
+#endif
+                uint16_t value = 0xffff;
+                if (edges == 0) {
+                    if (dmaMotors[i].useProshot) {
+                        value = decodeProshotPacket(dmaMotors[i].dmaBuffer);
+                    } else {
+                        value = decodeDshotPacket(dmaMotors[i].dmaBuffer);
+                    }
+                }
                 if (value != 0xffff) {
                     dmaMotors[i].dshotTelemetryValue = value;
                     if (i < 4) {
