@@ -128,7 +128,7 @@ void pwmStartDshotMotorUpdate(uint8_t motorCount)
 #ifdef STM32F7
                 uint32_t edges = LL_EX_DMA_GetDataLength(dmaMotors[i].dmaRef);
 #else
-                uint32_t edges = DMA_GetCurrDataCounter(motor->dmaRef);
+                uint32_t edges = DMA_GetCurrDataCounter(dmaMotors[i].dmaRef);
 #endif
                 uint16_t value = 0xffff;
                 if (edges == 0) {
