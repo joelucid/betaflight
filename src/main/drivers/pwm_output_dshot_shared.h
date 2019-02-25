@@ -20,19 +20,23 @@
 
 #ifdef USE_DSHOT
 
-static FAST_RAM_ZERO_INIT uint8_t dmaMotorTimerCount = 0;
-static FAST_RAM_ZERO_INIT motorDmaTimer_t dmaMotorTimers[MAX_DMA_TIMERS];
-static FAST_RAM_ZERO_INIT motorDmaOutput_t dmaMotors[MAX_SUPPORTED_MOTORS];
+FAST_RAM_ZERO_INIT static uint8_t dmaMotorTimerCount = 0;
+#ifdef STM32F7
+FAST_RAM_ZERO_INIT static motorDmaTimer_t dmaMotorTimers[MAX_DMA_TIMERS];
+FAST_RAM_ZERO_INIT static motorDmaOutput_t dmaMotors[MAX_SUPPORTED_MOTORS];
+#else
+static motorDmaTimer_t dmaMotorTimers[MAX_DMA_TIMERS];
+static motorDmaOutput_t dmaMotors[MAX_SUPPORTED_MOTORS];
+#endif
 
 #ifdef USE_DSHOT_TELEMETRY
-FAST_RAM_ZERO_INIT uint32_t readDoneCount;
+uint32_t readDoneCount;
 
 // TODO remove once debugging no longer needed
 FAST_RAM_ZERO_INIT uint32_t dshotInvalidPacketCount;
-FAST_RAM_ZERO_INIT uint32_t  inputBuffer[DSHOT_TELEMETRY_INPUT_LEN];
+FAST_RAM_ZERO_INIT uint32_t inputBuffer[DSHOT_TELEMETRY_INPUT_LEN];
 FAST_RAM_ZERO_INIT uint32_t setDirectionMicros;
 #endif
-
 
 motorDmaOutput_t *getMotorDmaOutput(uint8_t index)
 {
@@ -49,6 +53,52 @@ uint8_t getTimerIndex(TIM_TypeDef *timer)
     dmaMotorTimers[dmaMotorTimerCount++].timer = timer;
     return dmaMotorTimerCount - 1;
 }
+
+
+FAST_CODE void pwmWriteDshotInt(uint8_t index, uint16_t value)
+{
+    motorDmaOutput_t *const motor = &dmaMotors[index];
+
+    if (!motor->configured) {
+        return;
+    }
+    
+    /*If there is a command ready to go overwrite the value and send that instead*/
+    if (pwmDshotCommandIsProcessing()) {
+        value = pwmGetDshotCommand(index);
+        if (value == DSHOT_CMD_SIGNAL_LINE_CONTINUOUS_ERPM_TELEMETRY) {
+            dshotInvalidPacketCount = 0;
+            readDoneCount = 0;
+        }
+        if (value) {
+            motor->requestTelemetry = true;
+        }
+    }
+
+    motor->value = value;
+
+    uint16_t packet = prepareDshotPacket(motor);
+    uint8_t bufferSize;
+
+#ifdef USE_DSHOT_DMAR
+    if (useBurstDshot) {
+        bufferSize = loadDmaBuffer(&motor->timer->dmaBurstBuffer[timerLookupChannelIndex(motor->timerHardware->channel)], 4, packet);
+        motor->timer->dmaBurstLength = bufferSize * 4;
+    } else
+#endif
+    {    
+        bufferSize = loadDmaBuffer(motor->dmaBuffer, 1, packet);
+        motor->timer->timerDmaSources |= motor->timerDmaSource;
+#ifdef STM32F7
+        LL_EX_DMA_SetDataLength(motor->timerHardware->dmaRef, bufferSize);
+        LL_EX_DMA_EnableStream(motor->timerHardware->dmaRef);
+#else
+        DMA_SetCurrDataCounter(motor->timerHardware->dmaRef, bufferSize);
+        DMA_Cmd(motor->timerHardware->dmaRef, ENABLE);
+#endif
+    }
+}
+
 
 #ifdef USE_DSHOT_TELEMETRY
 
@@ -116,7 +166,11 @@ uint16_t getDshotTelemetry(uint8_t index)
 inline FAST_CODE static void pwmDshotSetDirectionOutput(
     motorDmaOutput_t * const motor, bool output
 #ifndef USE_DSHOT_TELEMETRY
+#ifdef STM32F7
     , LL_TIM_OC_InitTypeDef* pOcInit, LL_DMA_InitTypeDef* pDmaInit)
+#else
+    , TIM_OCInitTypeDef *pOcInit, DMA_InitTypeDef* pDmaInit
+#endif
 #endif
 );
 

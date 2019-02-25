@@ -166,7 +166,8 @@ maths_unittest_SRC := \
 
 
 osd_unittest_SRC := \
-		$(USER_DIR)/io/osd.c \
+		$(USER_DIR)/osd/osd.c \
+		$(USER_DIR)/osd/osd_elements.c \
 		$(USER_DIR)/common/typeconversion.c \
 		$(USER_DIR)/drivers/display.c \
 		$(USER_DIR)/common/maths.c \
@@ -383,6 +384,7 @@ COMMON_FLAGS = \
 	-Wall \
 	-Wextra \
 	-Werror \
+	-Wno-error=unused-command-line-argument \
 	-ggdb3 \
 	-O0 \
 	-DUNIT_TEST \

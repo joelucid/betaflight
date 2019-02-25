@@ -48,41 +48,6 @@
 
 #include "pwm_output_dshot_shared.h"
 
-void pwmWriteDshotInt(uint8_t index, uint16_t value)
-{
-    motorDmaOutput_t *const motor = &dmaMotors[index];
-
-    if (!motor->configured) {
-        return;
-    }
-
-    /*If there is a command ready to go overwrite the value and send that instead*/
-    if (pwmDshotCommandIsProcessing()) {
-        value = pwmGetDshotCommand(index);
-        if (value) {
-            motor->requestTelemetry = true;
-        }
-    }
-
-    motor->value = value;
-
-    uint16_t packet = prepareDshotPacket(motor);
-    uint8_t bufferSize;
-
-#ifdef USE_DSHOT_DMAR
-    if (useBurstDshot) {
-        bufferSize = loadDmaBuffer(&motor->timer->dmaBurstBuffer[timerLookupChannelIndex(motor->timerHardware->channel)], 4, packet);
-        motor->timer->dmaBurstLength = bufferSize * 4;
-    } else
-#endif
-    {
-        bufferSize = loadDmaBuffer(motor->dmaBuffer, 1, packet);
-        motor->timer->timerDmaSources |= motor->timerDmaSource;
-        DMA_SetCurrDataCounter(motor->timerHardware->dmaRef, bufferSize);
-        DMA_Cmd(motor->timerHardware->dmaRef, ENABLE);
-    }
-}
-
 #ifdef USE_DSHOT_TELEMETRY
 
 static void processInputIrq(motorDmaOutput_t * const motor)

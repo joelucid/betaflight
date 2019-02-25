@@ -175,7 +175,6 @@ FAST_CODE_NOINLINE void rpmFilterUpdate()
     }
 
     for (int i = 0; i < filterUpdatesPerIteration; i++) {
-
         float frequency = constrainf(
             (harmonic + 1) * motorFrequency[motor], currentFilter->minHz, currentFilter->maxHz);
         biquadFilter_t* template = &currentFilter->notch[0][motor][harmonic];

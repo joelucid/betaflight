@@ -34,6 +34,10 @@
 #undef USE_ESC_SENSOR
 #endif
 
+#ifndef USE_ESC_SENSOR
+#undef USE_ESC_SENSOR_TELEMETRY
+#endif
+
 // XXX Followup implicit dependencies among DASHBOARD, display_xxx and USE_I2C.
 // XXX This should eventually be cleaned up.
 #ifndef USE_I2C
@@ -202,7 +206,7 @@
 #define USE_RX_XN297
 #endif
 
-#ifdef GENERIC_TARGET
+#ifdef USE_UNIFIED_TARGET
 #define USE_CONFIGURATION_STATE
 
 // Setup crystal frequency for backward compatibility
@@ -214,7 +218,7 @@
 #else
 #define SYSTEM_HSE_VALUE (HSE_VALUE/1000000U)
 #endif
-#endif // GENERIC_TARGET
+#endif // USE_UNIFIED_TARGET
 
 // Number of pins that needs pre-init
 #ifdef USE_SPI
@@ -266,4 +270,9 @@
 #if !defined(USE_ACC)
 #undef USE_GPS_RESCUE
 #undef USE_ACRO_TRAINER
+#endif
+
+#ifndef USE_BEEPER
+#undef BEEPER_PIN
+#undef BEEPER_PWM_HZ
 #endif
