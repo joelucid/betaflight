@@ -168,7 +168,14 @@ FAST_CODE_NOINLINE void rpmFilterUpdate()
     FAST_RAM static rpmNotchFilter_t* currentFilter = &filters[0];
 
     for (int motor = 0; motor < getMotorCount(); motor++) {
-        filteredMotorErpm[motor] = pt1FilterApply(&rpmFilters[motor], getDshotTelemetry(motor));
+        static float x[MAX_SUPPORTED_MOTORS];
+        static float v[MAX_SUPPORTED_MOTORS];
+        float newx = getDshotTelemetry(motor);
+        float xcur = x[motor];
+        x[motor] += v[motor] + rpmFilters[motor].k * (newx - x[motor] - v[motor]);
+        v[motor] += rpmFilters[motor].k * ((x[motor] - xcur) - v[motor]);
+
+        filteredMotorErpm[motor] = x[motor]; //pt1FilterApply(&rpmFilters[motor], getDshotTelemetry(motor));
         if (motor < 4) {
             DEBUG_SET(DEBUG_RPM_FILTER, motor, motorFrequency[motor]);
         }
