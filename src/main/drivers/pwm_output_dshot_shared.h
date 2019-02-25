@@ -33,7 +33,6 @@ FAST_RAM_ZERO_INIT uint32_t  inputBuffer[DSHOT_TELEMETRY_INPUT_LEN];
 FAST_RAM_ZERO_INIT uint32_t setDirectionMicros;
 #endif
 
-
 motorDmaOutput_t *getMotorDmaOutput(uint8_t index)
 {
     return &dmaMotors[index];
@@ -116,7 +115,11 @@ uint16_t getDshotTelemetry(uint8_t index)
 inline FAST_CODE static void pwmDshotSetDirectionOutput(
     motorDmaOutput_t * const motor, bool output
 #ifndef USE_DSHOT_TELEMETRY
+#ifdef STM32F7
     , LL_TIM_OC_InitTypeDef* pOcInit, LL_DMA_InitTypeDef* pDmaInit)
+#else
+    , TIM_OCInitTypeDef *pOcInit, DMA_InitTypeDef* pDmaInit
+#endif
 #endif
 );
 
