@@ -20,12 +20,12 @@
 
 #ifdef USE_DSHOT
 
-static FAST_RAM_ZERO_INIT uint8_t dmaMotorTimerCount = 0;
-static FAST_RAM_ZERO_INIT motorDmaTimer_t dmaMotorTimers[MAX_DMA_TIMERS];
-static FAST_RAM_ZERO_INIT motorDmaOutput_t dmaMotors[MAX_SUPPORTED_MOTORS];
+FAST_RAM_ZERO_INIT static uint8_t dmaMotorTimerCount = 0;
+static motorDmaTimer_t dmaMotorTimers[MAX_DMA_TIMERS];
+static motorDmaOutput_t dmaMotors[MAX_SUPPORTED_MOTORS];
 
 #ifdef USE_DSHOT_TELEMETRY
-FAST_RAM_ZERO_INIT uint32_t readDoneCount;
+uint32_t readDoneCount;
 
 // TODO remove once debugging no longer needed
 FAST_RAM_ZERO_INIT uint32_t dshotInvalidPacketCount;
