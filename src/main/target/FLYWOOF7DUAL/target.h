@@ -140,7 +140,7 @@
 
 #define USE_ADC
 #define ADC_INSTANCE                        ADC3
-#define ADC3_DMA_OPT                        0  // DMA 2 Stream 0 Channel 2 
+#define ADC3_DMA_OPT                        0  // DMA 2 Stream 0
 
 
 #define CURRENT_METER_ADC_PIN               PC0

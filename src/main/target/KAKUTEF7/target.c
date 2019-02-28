@@ -27,6 +27,13 @@
 #include "drivers/timer.h"
 #include "drivers/timer_def.h"
 
+/* Score: 309 m: 6, dmatt: 0 emc: 0 lmc: 0, ledmc 0, odmac: 0 adcc: 0 ledc: 0 tc: 30 tcc: 0 nt 2 mxt 1 */
+/* T01 C3, T03 C3, T03 C4, T01 C1, T01 C2, T08 C4, T05 C4, T04 C1, ADC1  */
+/* D2S6O1, D1S7O0, D1S2O0, D2S3O2, D2S2O1, D2S7O0, D1S1O0, D1S0O0, D2 S0  */
+/* Usable motors:  M1 M2 M3 M4 M5 M6 */
+
+// bidir no change
+
 const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     DEF_TIM(TIM1, CH3, PE13, TIM_USE_PPM,   0, 1), // PPM, DMA2_ST6
 
