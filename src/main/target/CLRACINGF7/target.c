@@ -26,6 +26,13 @@
 #include "drivers/timer.h"
 #include "drivers/timer_def.h"
 
+/* Score: 110 m: 4, dmatt: 0 emc: 1 lmc: 0, ledmc 0, odmac: 0 adcc: 0 ledc: 0 tc: 0 tcc: 0 nt 1 mxt 1 */
+/* T02 C2, T04 C1, T04 C2, T04 C3, T04 C4, T03 C4, ADC1  */
+/* D1S6O0, D1S0O0, D1S3O0, D1S7O0, D0S0O0, D1S2O0, D2 S0  */
+/* Usable motors:  M1 M2 M3 M5 */
+
+// bidir no change. use led pin instead of PB9
+
 const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
 
     DEF_TIM(TIM2,  CH2,   PB3, TIM_USE_CAMERA_CONTROL,     0, 0), // USE FOR CAMERA CONTROL

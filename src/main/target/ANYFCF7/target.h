@@ -151,6 +151,7 @@
 #define VBAT_ADC_PIN                PC0
 #define CURRENT_METER_ADC_PIN       PC1
 #define RSSI_ADC_PIN                PC2
+#define ADC1_DMA_OPT 0
 
 #define ENABLE_BLACKBOX_LOGGING_ON_SDCARD_BY_DEFAULT
 
@@ -163,4 +164,4 @@
 #define TARGET_IO_PORTD 0xffff
 #define TARGET_IO_PORTE 0xffff
 
-#define USED_TIMERS  ( TIM_N(2) | TIM_N(3) | TIM_N(4) | TIM_N(5) | TIM_N(8) | TIM_N(9) | TIM_N(12) )
+#define USED_TIMERS  ( TIM_N(2) | TIM_N(3) | TIM_N(4) | TIM_N(5) | TIM_N(8) | TIM_N(9) | TIM_N(11) | TIM_N(12) )

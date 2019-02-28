@@ -27,7 +27,13 @@
 #include "drivers/timer_def.h"
 #include "drivers/dma.h"
 
+/* Score: 83 m: 10, dmatt: 0 emc: 0 lmc: 0, ledmc 1, odmac: 4 adcc: 0 ledc: 2 tc: 0 tcc: 0 nt 4 mxt 3 */
+/* T05 C1, T09 C2, T09 C1, T08 C3, T08 C1, T08 C4, T08 C2, T04 C1, T04 C2, T03 C4, T03 C3, T02 C2, T02 C3, T02 C4, T01 C1, T01 C2, T01 C3, ADC3  */
+/* D1S2O0, D0S0O0, D0S0O0, D2S4O1, D2S2O1, D2S7O0, D2S3O1, D1S0O0, D1S3O0, D1S2O0, D1S7O0, D0S0O0, D1S1O0, D1S6O1, D2S1O1, D2S6O0, D2S6O0, D2 S0  */
+/* Usable motors:  M1 M2 M3 M4 M5 M6 M7 M8 M9 M10 */
 
+
+   
 const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     DEF_TIM(TIM5,  CH1, PA0,  TIM_USE_CAMERA_CONTROL,      0, 0),
 
@@ -39,7 +45,7 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
 #else
     DEF_TIM(TIM8,  CH3, PC8,  TIM_USE_MOTOR,               0, 1), // ESC 1
 #endif
-    DEF_TIM(TIM8,  CH1, PC6,  TIM_USE_MOTOR,               0, 0), // ESC 2
+    DEF_TIM(TIM8,  CH1, PC6,  TIM_USE_MOTOR,               0, 1), // ESC 2
     DEF_TIM(TIM8,  CH4, PC9,  TIM_USE_MOTOR,               0, 0), // ESC 3
 #if (SPRACINGF7DUAL_REV <= 1)
     DEF_TIM(TIM8,  CH3, PC8,  TIM_USE_MOTOR,               0, 1), // ESC 4
@@ -56,13 +62,13 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     // Additional 2 PWM channels available on UART3 RX/TX pins
     // However, when using led strip the timer cannot be used, but no code appears to prevent that right now
     DEF_TIM(TIM2,  CH3, PB10, TIM_USE_MOTOR,               0, 0), // Shared with UART3 TX PIN and SPI3 TX (OSD)
-    DEF_TIM(TIM2,  CH4, PB11, TIM_USE_MOTOR,               0, 0), // Shared with UART3 RX PIN
+    DEF_TIM(TIM2,  CH4, PB11, TIM_USE_MOTOR,               0, 1), // Shared with UART3 RX PIN
 
-    DEF_TIM(TIM1,  CH1, PA8,  TIM_USE_TRANSPONDER,         0, 0), // Transponder
+    DEF_TIM(TIM1,  CH1, PA8,  TIM_USE_TRANSPONDER,         0, 1), // Transponder
     // Additional 2 PWM channels available on UART1 RX/TX pins
     // However, when using transponder the timer cannot be used, but no code appears to prevent that right now
-    DEF_TIM(TIM1,  CH2, PA9,  TIM_USE_SERVO | TIM_USE_PWM, 0, 1), // PWM 3
-    DEF_TIM(TIM1,  CH3, PA10, TIM_USE_SERVO | TIM_USE_PWM, 0, 1), // PWM 4
+    DEF_TIM(TIM1,  CH2, PA9,  TIM_USE_SERVO | TIM_USE_PWM, 0, 0), // PWM 3
+    DEF_TIM(TIM1,  CH3, PA10, TIM_USE_SERVO | TIM_USE_PWM, 0, 0), // PWM 4
 };
 
 #if (SPRACINGF7DUAL_REV <= 1)

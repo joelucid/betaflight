@@ -100,6 +100,8 @@
 #define SPEKTRUM_BIND_PIN        UART2_RX_PIN
 
 #define USE_ADC
+#define ADC_INSTANCE ADC2
+#define ADC2_DMA_OPT            0
 #define DEFAULT_VOLTAGE_METER_SOURCE VOLTAGE_METER_ADC
 #define VBAT_SCALE_DEFAULT      160
 #define VBAT_ADC_PIN            PB1
@@ -114,4 +116,4 @@
 
 #define USABLE_TIMER_CHANNEL_COUNT 8
 
-#define USED_TIMERS  ( TIM_N(2) | TIM_N(4) | TIM_N(5) | TIM_N(8) | TIM_N(9) )
+#define USED_TIMERS  ( TIM_N(2) | TIM_N(3) | TIM_N(4) | TIM_N(5) | TIM_N(9) )

@@ -218,7 +218,7 @@
 
 #define USE_ADC
 #define ADC_INSTANCE            ADC1
-#define ADC1_DMA_OPT            1  // DMA 2 Stream 4 Channel 0 (compat default)
+#define ADC1_DMA_OPT            0  // DMA 2 Stream 0 Channel 0 (compat default)
 #define CURRENT_METER_ADC_PIN   PC2
 #define VBAT_ADC_PIN            PC3
 #define RSSI_ADC_PIN            PC5
@@ -256,4 +256,4 @@
 #define USABLE_TIMER_CHANNEL_COUNT 12
 #endif
 
-#define USED_TIMERS  ( TIM_N(1) | TIM_N(2) | TIM_N(3) | TIM_N(4) | TIM_N(8) | TIM_N(9) )
+#define USED_TIMERS  ( TIM_N(1) | TIM_N(2) | TIM_N(3) | TIM_N(4) | TIM_N(5) | TIM_N(8) | TIM_N(9) )

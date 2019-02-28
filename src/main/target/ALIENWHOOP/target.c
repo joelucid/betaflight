@@ -43,6 +43,14 @@
 #include "drivers/timer_def.h"
 #include "drivers/dma.h"
 
+/* Score: 10 m: 4, dmatt: 0 emc: 0 lmc: 0, ledmc 0, odmac: 0 adcc: 0 ledc: 0 tc: 0 tcc: 0 nt 1 mxt 1 */
+/* T08 C4, T03 C3, T03 C2, T08 C1, T05 C1,  */
+/* D2S7O0, D1S7O0, D1S5O0, D2S2O0, D1S2O0,  */
+/* Usable motors:  M1 M2 M3 M4 */
+
+
+// no change required for bidir
+
 /* Currently only supporting brushed quad configuration e.g. Tiny Whoop. Care must be
  * taken to ensure functionality on both F4 and F7 (STM32F405RGT and STM32F722RET)
  */

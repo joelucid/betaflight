@@ -133,6 +133,7 @@
 #define I2C_DEVICE              (I2CDEV_2)
 
 #define USE_ADC
+#define ADC1_DMA_OPT            1
 #define VBAT_ADC_PIN            PC0
 
 #define DEFAULT_RX_FEATURE      FEATURE_RX_SERIAL
