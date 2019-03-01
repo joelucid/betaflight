@@ -378,6 +378,10 @@ void initEscEndpoints(void)
     switch (motorConfig()->dev.motorPwmProtocol) {
 #ifdef USE_DSHOT
     case PWM_TYPE_PROSHOT1000:
+
+    case PWM_TYPE_JSHOT2000:
+    case PWM_TYPE_JSHOT1000:
+    case PWM_TYPE_JSHOT500:
     case PWM_TYPE_DSHOT1200:
     case PWM_TYPE_DSHOT600:
     case PWM_TYPE_DSHOT300:

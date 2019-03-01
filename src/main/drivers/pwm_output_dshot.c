@@ -99,6 +99,12 @@ FAST_CODE void pwmDshotSetDirectionOutput(
     if (!output) {
         motor->isInput = true;
         motor->timer->inputDirectionStampUs = micros();
+        if (motor->timer->useJshot) {
+            TIM_ARRPreloadConfig(timer, DISABLE);
+            timer->ARR = 0xffffffff;
+            TIM_ARRPreloadConfig(timer, ENABLE);
+        }
+
         TIM_ICInit(timer, &motor->icInitStruct);
 
 #if defined(STM32F3)
@@ -139,7 +145,9 @@ FAST_CODE void pwmDshotSetDirectionOutput(
     }
 
     DMA_Init(dmaRef, pDmaInit);
-    DMA_ITConfig(dmaRef, DMA_IT_TC, ENABLE);
+    if (output || !motor->timer->useJshot) {
+        DMA_ITConfig(dmaRef, DMA_IT_TC, ENABLE);
+    }
 }
 
 
@@ -164,6 +172,11 @@ void pwmCompleteDshotMotorUpdate(uint8_t motorCount)
         } else
 #endif
         {
+            if (dmaMotorTimers[i].useJshot) {
+                TIM_ARRPreloadConfig(dmaMotorTimers[i].timer, DISABLE);
+                dmaMotorTimers[i].timer->ARR = dmaMotorTimers[i].outputPeriod;
+                TIM_ARRPreloadConfig(dmaMotorTimers[i].timer, ENABLE);
+            }
             TIM_SetCounter(dmaMotorTimers[i].timer, 0);
             TIM_DMACmd(dmaMotorTimers[i].timer, dmaMotorTimers[i].timerDmaSources, ENABLE);
             dmaMotorTimers[i].timerDmaSources = 0;
@@ -253,13 +266,7 @@ void pwmDshotMotorHardwareConfig(const timerHardware_t *timerHardware, uint8_t m
     }
 
     motorDmaOutput_t * const motor = &dmaMotors[motorIndex];
-#ifdef USE_DSHOT_TELEMETRY
-    motor->useProshot = (pwmProtocolType == PWM_TYPE_PROSHOT1000);
-#endif    
-    motor->timerHardware = timerHardware;
-
     TIM_TypeDef *timer = timerHardware->tim;
-    const IO_t motorIO = IOGetByTag(timerHardware->tag);
 
     // Boolean configureTimer is always true when different channels of the same timer are processed in sequence,
     // causing the timer and the associated DMA initialized more than once.
@@ -267,6 +274,12 @@ void pwmDshotMotorHardwareConfig(const timerHardware_t *timerHardware, uint8_t m
     // However, since the initialization is idempotent, it is left as is in a favor of flash space (for now).
     const uint8_t timerIndex = getTimerIndex(timer);
     const bool configureTimer = (timerIndex == dmaMotorTimerCount-1);
+
+    motor->timer = &dmaMotorTimers[timerIndex];
+    motor->index = motorIndex;
+    motor->timerHardware = timerHardware;
+
+    const IO_t motorIO = IOGetByTag(timerHardware->tag);
 
     uint8_t pupMode = 0;
     pupMode = (output & TIMER_OUTPUT_INVERTED) ? GPIO_PuPd_DOWN : GPIO_PuPd_UP;
@@ -315,8 +328,6 @@ void pwmDshotMotorHardwareConfig(const timerHardware_t *timerHardware, uint8_t m
     motor->icInitStruct.TIM_ICFilter = 0; //2;
 #endif
 
-    motor->timer = &dmaMotorTimers[timerIndex];
-    motor->index = motorIndex;
 
 #ifdef USE_DSHOT_DMAR
     if (useBurstDshot) {
@@ -392,6 +403,7 @@ void pwmDshotMotorHardwareConfig(const timerHardware_t *timerHardware, uint8_t m
     motor->dshotTelemetryDeadtimeUs = DSHOT_TELEMETRY_DEADTIME_US + 1000000 *
         ( 2 + (motor->useProshot ? 4 * MOTOR_NIBBLE_LENGTH_PROSHOT : 16 * MOTOR_BITLENGTH))
         / getDshotHz(pwmProtocolType);
+    motor->timer->outputPeriod = (pwmProtocolType == PWM_TYPE_PROSHOT1000 ? (MOTOR_NIBBLE_LENGTH_PROSHOT) : MOTOR_BITLENGTH) - 1;
     pwmDshotSetDirectionOutput(motor, true);
 #else
     pwmDshotSetDirectionOutput(motor, true, &OCINIT, &DMAINIT);

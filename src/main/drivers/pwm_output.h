@@ -92,6 +92,9 @@ typedef enum {
     PWM_TYPE_DSHOT600,
     PWM_TYPE_DSHOT1200,
     PWM_TYPE_PROSHOT1000,
+    PWM_TYPE_JSHOT500,
+    PWM_TYPE_JSHOT1000,
+    PWM_TYPE_JSHOT2000,
 #endif
     PWM_TYPE_MAX
 } motorPwmProtocolTypes_e;
@@ -106,9 +109,16 @@ typedef enum {
 #define MOTOR_DSHOT300_HZ     MHZ_TO_HZ(6)
 #define MOTOR_DSHOT150_HZ     MHZ_TO_HZ(3)
 
+#define MOTOR_JSHOT2000_HZ   MOTOR_DSHOT1200_HZ
+#define MOTOR_JSHOT1000_HZ   MOTOR_DSHOT600_HZ
+#define MOTOR_JSHOT500_HZ    MOTOR_DSHOT300_HZ
+
 #define MOTOR_BIT_0           7
 #define MOTOR_BIT_1           14
 #define MOTOR_BITLENGTH       20
+
+#define MOTOR_JSHOT_BITLENGTH 6
+
 
 #define MOTOR_PROSHOT1000_HZ         MHZ_TO_HZ(24)
 #define PROSHOT_BASE_SYMBOL          24 // 1uS
@@ -142,6 +152,10 @@ typedef struct {
 #endif
     timeUs_t inputDirectionStampUs;
 #endif
+#ifdef USE_DSHOT_TELEMETRY
+    uint8_t  outputPeriod;
+    bool     useJshot;
+#endif    
     uint16_t timerDmaSources;
 } motorDmaTimer_t;
 
