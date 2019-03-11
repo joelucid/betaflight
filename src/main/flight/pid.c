@@ -73,7 +73,7 @@ static FAST_RAM_ZERO_INIT bool pidStabilisationEnabled;
 
 static FAST_RAM_ZERO_INIT bool inCrashRecoveryMode = false;
 
-static FAST_RAM_ZERO_INIT float dT;
+FAST_RAM_ZERO_INIT float dT;
 static FAST_RAM_ZERO_INIT float pidFrequency;
 
 static FAST_RAM_ZERO_INIT uint8_t antiGravityMode;

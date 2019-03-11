@@ -209,4 +209,17 @@ FAST_CODE_NOINLINE void rpmFilterUpdate()
     }
 }
 
+
+float getMinRpm()
+{
+    float minRpm = 100000.0f;
+    for (int motor = 0; motor < getMotorCount(); motor++) {
+        if (motorFrequency[motor] < minRpm) {
+            minRpm = motorFrequency[motor];
+        }
+    }
+    return minRpm;
+}
+
+
 #endif

@@ -63,7 +63,7 @@
 
 #include "sensors/battery.h"
 #include "sensors/gyro.h"
-
+#include "sensors/rpm_filter.h"
 PG_REGISTER_WITH_RESET_TEMPLATE(mixerConfig_t, mixerConfig, PG_MIXER_CONFIG, 0);
 
 #define DYN_LPF_THROTTLE_STEPS           100
@@ -653,12 +653,41 @@ static void calculateThrottleAndCurrentMotorEndpoints(timeUs_t currentTimeUs)
             pidResetIterm();
         }
     } else {
+
         throttle = rcCommand[THROTTLE] - PWM_RANGE_MIN + throttleAngleCorrection;
         currentThrottleInputRange = rcCommandThrottleRange;
-        motorRangeMin = motorOutputLow;
-        motorRangeMax = motorOutputHigh;
-        motorOutputMin = motorOutputLow;
-        motorOutputRange = motorOutputHigh - motorOutputLow;
+
+        static bool inited;
+        static pt1Filter_t filter;
+        extern float dT;
+        if (!inited) {
+            pt1FilterInit(&filter, pt1FilterGain(50.0f, dT));
+            inited = true;
+        }
+
+        const float targetIdle = 35.0f;
+        const float error = targetIdle - pt1FilterApply(&filter, getMinRpm());
+        const float kP = 0.005f;
+        const float kI = 0.15f;
+        static float ierror;
+        float throttleIncrease = constrainf(
+            kP * error + ierror, 0.0f,
+            constrainf(filter.state / 30.0f, 0.0f, 1.0f) * 0.2f);
+        if (throttleIncrease > 0.0f) {
+            ierror = constrainf( ierror + kI * error * dT, -0.2f, 0.2f);
+        }
+
+        uint16_t getBatteryAverageCellVoltage(void);
+        float cellVoltage = getBatteryAverageCellVoltage() * 0.01f;
+        float throttleDecrease = constrainf((3.4f - cellVoltage) * 0.8f, 0.0f, 0.5f);
+
+        motorRangeMin = motorOutputLow + throttleIncrease * (motorOutputHigh - motorOutputLow);
+        motorRangeMax = motorOutputHigh - throttleDecrease * (motorOutputHigh - motorOutputLow);
+//        DEBUG_SET(DEBUG_RPM_FILTER, 0, motorRangeMax);
+//        DEBUG_SET(DEBUG_RPM_FILTER, 1, cellVoltage * 100);
+        motorRangeMax = MAX(motorRangeMax, motorRangeMin);
+        motorOutputMin = motorRangeMin;
+        motorOutputRange = motorOutputHigh - motorOutputMin;
         motorOutputMixSign = 1;
     }
 
