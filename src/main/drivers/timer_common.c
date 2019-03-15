@@ -61,10 +61,10 @@ const timerHardware_t *timerGetByTagAndIndex(ioTag_t ioTag, unsigned timerIndex)
     }
 
 #if TIMER_CHANNEL_COUNT > 0
-    uint8_t index = 1;
+    uint8_t index = 0;
     for (unsigned i = 0; i < TIMER_CHANNEL_COUNT; i++) {
         if (TIMER_HARDWARE[i].tag == ioTag) {
-            if (index == timerIndex || timerIndex == 0) {
+            if (index == timerIndex) {
                 return &TIMER_HARDWARE[i];
             }
             index++;
