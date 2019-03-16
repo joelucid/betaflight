@@ -665,7 +665,7 @@ static void calculateThrottleAndCurrentMotorEndpoints(timeUs_t currentTimeUs)
             inited = true;
         }
 
-        const float targetIdle = 35.0f;
+        const float targetIdle = 55.0f;
         const float error = targetIdle - pt1FilterApply(&filter, getMinRpm());
         const float kP = 0.005f;
         const float kI = 0.15f;
@@ -679,7 +679,7 @@ static void calculateThrottleAndCurrentMotorEndpoints(timeUs_t currentTimeUs)
 
         uint16_t getBatteryAverageCellVoltage(void);
         float cellVoltage = getBatteryAverageCellVoltage() * 0.01f;
-        float throttleDecrease = constrainf((3.4f - cellVoltage) * 0.8f, 0.0f, 0.5f);
+        float throttleDecrease = constrainf((3.2f - cellVoltage) * 0.8f, 0.0f, 0.5f);
 
         motorRangeMin = motorOutputLow + throttleIncrease * (motorOutputHigh - motorOutputLow);
         motorRangeMax = motorOutputHigh - throttleDecrease * (motorOutputHigh - motorOutputLow);
