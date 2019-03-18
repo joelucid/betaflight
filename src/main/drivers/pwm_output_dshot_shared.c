@@ -203,6 +203,24 @@ FAST_CODE void pwmDshotSetDirectionOutput(
 
 #ifdef USE_DSHOT_TELEMETRY
 
+void updateDshotTelemetryQuality(dshotTelemetryQuality_t *qualityStats, bool packetValid)
+{
+    uint8_t statsBucketIndex = (millis() / DSHOT_TELEMETRY_QUALITY_BUCKET_MS) % DSHOT_TELEMETRY_QUALITY_BUCKET_COUNT;
+    if (statsBucketIndex != qualityStats->lastBucketIndex) {
+        qualityStats->packetCountSum -= qualityStats->packetCountArray[statsBucketIndex];
+        qualityStats->invalidCountSum -= qualityStats->invalidCountArray[statsBucketIndex];
+        qualityStats->packetCountArray[statsBucketIndex] = 0;
+        qualityStats->invalidCountArray[statsBucketIndex] = 0;
+        qualityStats->lastBucketIndex = statsBucketIndex;
+    }
+    qualityStats->packetCountSum++;
+    qualityStats->packetCountArray[statsBucketIndex]++;
+    if (!packetValid) {
+        qualityStats->invalidCountSum++;
+        qualityStats->invalidCountArray[statsBucketIndex]++;
+    }
+}
+
 void pwmStartDshotMotorUpdate(uint8_t motorCount)
 {
     if (useDshotTelemetry) {
@@ -227,11 +245,13 @@ void pwmStartDshotMotorUpdate(uint8_t motorCount)
                     if (i < 4) {
                         DEBUG_SET(DEBUG_DSHOT_RPM_TELEMETRY, i, value);
                     }
+                    updateDshotTelemetryQuality(&dmaMotors[i].dshotTelemetryQuality, true);
                 } else {
                     dshotInvalidPacketCount++;
                     if (i == 0) {
                         memcpy(inputBuffer,dmaMotors[i].dmaBuffer,sizeof(inputBuffer));
                     }
+                    updateDshotTelemetryQuality(&dmaMotors[i].dshotTelemetryQuality, false);
                 }
                 dmaMotors[i].hasTelemetry = false;
             } else {
@@ -250,6 +270,10 @@ void pwmStartDshotMotorUpdate(uint8_t motorCount)
 bool isDshotMotorTelemetryActive(uint8_t motorIndex)
 {
     return dmaMotors[motorIndex].dshotTelemetryActive;
+}
+
+dshotTelemetryQuality_t *pwmGetDshotTelemetryQuality(uint8_t motorIndex) {
+    return &dmaMotors[motorIndex].dshotTelemetryQuality;
 }
 
 #endif

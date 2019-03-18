@@ -74,6 +74,7 @@ extern uint8_t __config_end;
 #include "drivers/io.h"
 #include "drivers/io_impl.h"
 #include "drivers/light_led.h"
+#include "drivers/pwm_output.h"
 #include "drivers/rangefinder/rangefinder_hcsr04.h"
 #include "drivers/sdcard.h"
 #include "drivers/sensor.h"
@@ -4234,28 +4235,6 @@ static void cliStatus(char *cmdline)
         cliPrintf(" %s", armingDisableFlagNames[bitpos]);
     }
     cliPrintLinefeed();
-#if defined(USE_DSHOT) && defined(USE_DSHOT_TELEMETRY)
-    if (useDshotTelemetry) {
-        cliPrintLinef("Dshot reads: %u", readDoneCount);
-        cliPrintLinef("Dshot invalid pkts: %u", dshotInvalidPacketCount);
-        extern uint32_t setDirectionMicros;
-        cliPrintLinef("Dshot irq micros: %u", setDirectionMicros);
-        for (int i = 0; i<getMotorCount(); i++) {
-            cliPrintLinef( "Dshot RPM Motor %u: %u", i, (int)getDshotTelemetry(i));
-        }
-        bool proshot = (motorConfig()->dev.motorPwmProtocol == PWM_TYPE_PROSHOT1000);
-        int modulo = proshot ? MOTOR_NIBBLE_LENGTH_PROSHOT : MOTOR_BITLENGTH;
-        int len = proshot ? 8 : DSHOT_TELEMETRY_INPUT_LEN;
-        for (int i=0; i<len; i++) {
-            cliPrintf("%u ", (int)inputBuffer[i]);
-        }
-        cliPrintLinefeed();
-        for (int i=1; i<len; i+=2) {
-            cliPrintf("%u ", (int)(inputBuffer[i] + modulo - inputBuffer[i-1]) % modulo);
-        }
-        cliPrintLinefeed();
-    }
-#endif
 }
 
 #if defined(USE_TASK_STATISTICS)
@@ -5251,6 +5230,54 @@ error:
 }
 #endif
 
+#ifdef USE_DSHOT_TELEMETRY
+static void cliDshotTelemetryInfo(char *cmdline)
+{
+    UNUSED(cmdline);
+
+    if (useDshotTelemetry) {
+        cliPrintLinef("Dshot reads: %u", readDoneCount);
+        cliPrintLinef("Dshot invalid pkts: %u", dshotInvalidPacketCount);
+        extern uint32_t setDirectionMicros;
+        cliPrintLinef("Dshot irq micros: %u", setDirectionMicros);
+        cliPrintLinefeed();
+
+        cliPrintLine("Motor     RPM   Invalid");
+        cliPrintLine("=====   =====   =======");
+        for (uint8_t i = 0; i < getMotorCount(); i++) {
+            cliPrintf("%5d   %5d   ", i, (int)getDshotTelemetry(i));
+            if (isDshotMotorTelemetryActive(i)) {
+                dshotTelemetryQuality_t *motorTelemetryQuality = pwmGetDshotTelemetryQuality(i);
+                const uint32_t totalCount = motorTelemetryQuality->packetCountSum;
+                const uint32_t invalidCount = motorTelemetryQuality->invalidCountSum;
+                int calcPercent = 0;
+                if (totalCount > 0) {
+                    calcPercent = lrintf(invalidCount * 10000.0f / totalCount);
+                }
+                cliPrintLinef("%3d.%02d%%", calcPercent / 100, calcPercent % 100);
+            } else {
+                cliPrintLine("NO DATA");
+            }
+        }
+        cliPrintLinefeed();
+
+        bool proshot = (motorConfig()->dev.motorPwmProtocol == PWM_TYPE_PROSHOT1000);
+        int modulo = proshot ? MOTOR_NIBBLE_LENGTH_PROSHOT : MOTOR_BITLENGTH;
+        int len = proshot ? 8 : DSHOT_TELEMETRY_INPUT_LEN;
+        for (int i=0; i<len; i++) {
+            cliPrintf("%u ", (int)inputBuffer[i]);
+        }
+        cliPrintLinefeed();
+        for (int i=1; i<len; i+=2) {
+            cliPrintf("%u ", (int)(inputBuffer[i] + modulo - inputBuffer[i-1]) % modulo);
+        }
+        cliPrintLinefeed();
+    } else {
+        cliPrintLine("Dshot telemetry not enabled");
+    }
+}
+#endif
+
 static void printConfig(char *cmdline, bool doDiff)
 {
     dumpFlags_t dumpMask = DUMP_MASTER;
@@ -5580,6 +5607,9 @@ const clicmd_t cmdTable[] = {
 #else
     CLI_COMMAND_DEF("dma", "show DMA assignments", "show", cliDma),
 #endif
+#endif
+#ifdef USE_DSHOT_TELEMETRY
+    CLI_COMMAND_DEF("dshot_telemetry_info", "disply dshot telemetry info and stats", NULL, cliDshotTelemetryInfo),
 #endif
 #ifdef USE_DSHOT
     CLI_COMMAND_DEF("dshotprog", "program DShot ESC(s)", "<index> <command>+", cliDshotProg),
