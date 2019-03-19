@@ -22,6 +22,8 @@
 
 #include "platform.h"
 
+#include "common/time.h"
+
 #include "drivers/io_types.h"
 #include "drivers/pwm_output_counts.h"
 #include "drivers/timer.h"
@@ -112,6 +114,8 @@ typedef enum {
 #define PROSHOT_BASE_SYMBOL          24 // 1uS
 #define PROSHOT_BIT_WIDTH            3
 #define MOTOR_NIBBLE_LENGTH_PROSHOT  96 // 4uS
+
+#define DSHOT_TELEMETRY_DEADTIME     (2 * 30 + 10) // 2 * 30uS to switch lines plus 10us grace period
 #endif
 
 
@@ -142,6 +146,7 @@ typedef struct {
 #endif
     uint16_t dmaBurstLength;
     uint32_t dmaBurstBuffer[DSHOT_DMA_BUFFER_SIZE * 4];
+    timeUs_t inputDirectionStamp;
 #endif
     uint16_t timerDmaSources;
 } motorDmaTimer_t;
@@ -160,6 +165,7 @@ typedef struct {
     volatile bool isInput;
     volatile bool hasTelemetry;
     uint16_t dshotTelemetryValue;
+    uint16_t dshotTelemetryDeadtime;
     bool dshotTelemetryActive;
     dshotTelemetryQuality_t dshotTelemetryQuality;
 #ifdef USE_HAL_DRIVER
@@ -198,7 +204,7 @@ motorDmaOutput_t *getMotorDmaOutput(uint8_t index);
 struct timerHardware_s;
 typedef void pwmWriteFn(uint8_t index, float value);  // function pointer used to write motors
 typedef void pwmCompleteWriteFn(uint8_t motorCount);   // function pointer used after motors are written
-typedef void pwmStartWriteFn(uint8_t motorCount);   // function pointer used before motors are written
+typedef bool pwmStartWriteFn(uint8_t motorCount);   // function pointer used before motors are written
 
 typedef struct {
     volatile timCCR_t *ccr;
@@ -259,7 +265,7 @@ void pwmWriteDshotCommand(uint8_t index, uint8_t motorCount, uint8_t command, bo
 void pwmWriteDshotInt(uint8_t index, uint16_t value);
 void pwmDshotMotorHardwareConfig(const timerHardware_t *timerHardware, uint8_t motorIndex, motorPwmProtocolTypes_e pwmProtocolType, uint8_t output);
 #ifdef USE_DSHOT_TELEMETRY
-void pwmStartDshotMotorUpdate(uint8_t motorCount);
+bool pwmStartDshotMotorUpdate(uint8_t motorCount);
 #endif
 void pwmCompleteDshotMotorUpdate(uint8_t motorCount);
 
@@ -286,7 +292,7 @@ void pwmOutConfig(timerChannel_t *channel, const timerHardware_t *timerHardware,
 void pwmWriteMotor(uint8_t index, float value);
 void pwmShutdownPulsesForAllMotors(uint8_t motorCount);
 void pwmCompleteMotorUpdate(uint8_t motorCount);
-void pwmStartMotorUpdate(uint8_t motorCount);
+bool pwmStartMotorUpdate(uint8_t motorCount);
 
 void pwmWriteServo(uint8_t index, float value);
 
