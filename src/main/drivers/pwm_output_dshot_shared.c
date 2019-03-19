@@ -258,7 +258,7 @@ bool pwmStartDshotMotorUpdate(uint8_t motorCount)
             dmaMotors[i].hasTelemetry = false;
         } else {
             timeDelta_t usSinceInput = cmpTimeUs(micros(), dmaMotors[i].timer->inputDirectionStamp);
-            if (usSinceInput >= 0 && usSinceInput < 40 + 27) {
+            if (usSinceInput >= 0 && usSinceInput < dmaMotors[i].dshotTelemetryDeadtime) {
                 return false;
             }
 #ifdef STM32F7
