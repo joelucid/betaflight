@@ -333,9 +333,6 @@ void motorDevInit(const motorDevConfig_t *motorConfig, uint16_t idlePulse, uint8
     case PWM_TYPE_DSHOT600:
     case PWM_TYPE_DSHOT300:
     case PWM_TYPE_DSHOT150:
-    case PWM_TYPE_JSHOT2000:
-    case PWM_TYPE_JSHOT1000:
-    case PWM_TYPE_JSHOT500:
         pwmWrite = &pwmWriteDshot;
         loadDmaBuffer = &loadDmaBufferDshot;
         pwmCompleteWrite = &pwmCompleteDshotMotorUpdate;
@@ -443,13 +440,10 @@ uint32_t getDshotHz(motorPwmProtocolTypes_e pwmProtocolType)
     switch (pwmProtocolType) {
     case(PWM_TYPE_PROSHOT1000):
         return MOTOR_PROSHOT1000_HZ;
-    case(PWM_TYPE_JSHOT2000):
     case(PWM_TYPE_DSHOT1200):
         return MOTOR_DSHOT1200_HZ;
-    case(PWM_TYPE_JSHOT1000):
     case(PWM_TYPE_DSHOT600):
         return MOTOR_DSHOT600_HZ;
-    case(PWM_TYPE_JSHOT500):
     case(PWM_TYPE_DSHOT300):
         return MOTOR_DSHOT300_HZ;
     default:

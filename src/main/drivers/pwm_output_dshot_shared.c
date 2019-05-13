@@ -308,7 +308,7 @@ bool pwmStartDshotMotorUpdate(uint8_t motorCount)
         if (!dmaMotors[i].hasTelemetry && usSinceInput >= 0 && usSinceInput < dmaMotors[i].dshotTelemetryDeadtimeUs) {
                 return false;
         }
-        if (dmaMotors[i].hasTelemetry || (dmaMotors[i].isInput && dmaMotors[i].timer->useJshot)) {
+        if (dmaMotors[i].hasTelemetry || dmaMotors[i].isInput) {
             uint16_t value = 0xffff;
             if (edges == 0) {
                 if (dmaMotors[i].useProshot) {
@@ -317,7 +317,7 @@ bool pwmStartDshotMotorUpdate(uint8_t motorCount)
                     value = decodeDshotPacket(dmaMotors[i].dmaBuffer);
                 }
             } else {
-                if (dmaMotors[i].timer->useJshot && edges < 32 - 7) {
+                if (edges < 32 - 7) {
                     readDoneCount++;
                     value = decodeJshotPacket(dmaMotors[i].dmaBuffer, 32 - edges);
                 } else {

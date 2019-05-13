@@ -265,7 +265,6 @@ static const char * const lookupTablePwmProtocol[] = {
     "OFF", "ONESHOT125", "ONESHOT42", "MULTISHOT", "BRUSHED",
 #ifdef USE_DSHOT
     "DSHOT150", "DSHOT300", "DSHOT600", "DSHOT1200", "PROSHOT1000",
-    "JSHOT500", "JSHOT1000", "JSHOT2000",
 #endif
 };
 

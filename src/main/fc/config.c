@@ -457,9 +457,6 @@ static void validateAndFixConfig(void)
     case PWM_TYPE_DSHOT600:
     case PWM_TYPE_DSHOT300:
     case PWM_TYPE_DSHOT150:
-    case PWM_TYPE_JSHOT2000:
-    case PWM_TYPE_JSHOT1000:
-    case PWM_TYPE_JSHOT500:
         usingDshotProtocol = true;
         break;
     default:

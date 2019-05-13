@@ -99,11 +99,9 @@ FAST_CODE void pwmDshotSetDirectionOutput(
     if (!output) {
         motor->isInput = true;
         motor->timer->inputDirectionStampUs = micros();
-        if (motor->timer->useJshot) {
-            TIM_ARRPreloadConfig(timer, DISABLE);
-            timer->ARR = 0xffffffff;
-            TIM_ARRPreloadConfig(timer, ENABLE);
-        }
+        TIM_ARRPreloadConfig(timer, DISABLE);
+        timer->ARR = 0xffffffff;
+        TIM_ARRPreloadConfig(timer, ENABLE);
 
         TIM_ICInit(timer, &motor->icInitStruct);
 
@@ -145,7 +143,7 @@ FAST_CODE void pwmDshotSetDirectionOutput(
     }
 
     DMA_Init(dmaRef, pDmaInit);
-    if (output || !motor->timer->useJshot) {
+    if (output) {
         DMA_ITConfig(dmaRef, DMA_IT_TC, ENABLE);
     }
 }
@@ -172,11 +170,9 @@ void pwmCompleteDshotMotorUpdate(uint8_t motorCount)
         } else
 #endif
         {
-            if (dmaMotorTimers[i].useJshot) {
-                TIM_ARRPreloadConfig(dmaMotorTimers[i].timer, DISABLE);
-                dmaMotorTimers[i].timer->ARR = dmaMotorTimers[i].outputPeriod;
-                TIM_ARRPreloadConfig(dmaMotorTimers[i].timer, ENABLE);
-            }
+            TIM_ARRPreloadConfig(dmaMotorTimers[i].timer, DISABLE);
+            dmaMotorTimers[i].timer->ARR = dmaMotorTimers[i].outputPeriod;
+            TIM_ARRPreloadConfig(dmaMotorTimers[i].timer, ENABLE);
             TIM_SetCounter(dmaMotorTimers[i].timer, 0);
             TIM_DMACmd(dmaMotorTimers[i].timer, dmaMotorTimers[i].timerDmaSources, ENABLE);
             dmaMotorTimers[i].timerDmaSources = 0;
