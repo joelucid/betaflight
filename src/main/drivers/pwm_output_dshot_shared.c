@@ -198,6 +198,58 @@ static uint16_t decodeProshotPacket(uint32_t buffer[])
     return value >> 4;
 }
 
+static uint32_t decodeJshotPacket(uint32_t buffer[], uint32_t count)
+{
+    uint32_t start = micros();
+    uint32_t value = 0;
+    uint32_t oldValue = buffer[0];
+    uint32_t bits = 0;
+    for (uint32_t i = 1; i < count; i++) {
+        int diff = buffer[i] - oldValue;
+        if (diff <= 0 || bits >= 21) {
+            break;
+        }
+        uint32_t count = (diff + 6) / 12;
+        value <<= count;
+        value |= 1 << (count - 1);
+        oldValue = buffer[i];
+        bits += count;
+    }
+    if (bits == 0 || bits != 21) {
+        return 0xffff;
+    }
+    
+    static const uint32_t decode[32] = {
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 10, 11, 0, 13, 14, 15,
+        0, 0, 2, 3, 0, 5, 6, 7, 0, 0, 8, 1, 0, 4, 12, 0 };
+
+    uint32_t decodedValue = decode[value & 0x1f];
+    decodedValue |= decode[(value >> 5) & 0x1f] << 4;
+    decodedValue |= decode[(value >> 10) & 0x1f] << 8;
+    decodedValue |= decode[(value >> 15) & 0x1f] << 12;
+    
+    uint32_t csum = decodedValue;
+    csum = csum ^ (csum >> 8); // xor bytes
+    csum = csum ^ (csum >> 4); // xor nibbles
+
+    if (csum & 0xf) {
+        setDirectionMicros = micros() - start;
+        return 0xffff;
+    }
+    decodedValue >>= 4;
+    
+    if (decodedValue == 0x0fff) {
+        setDirectionMicros = micros() - start;
+        return 0;
+    }
+    decodedValue = (decodedValue & 0x000001ff) << ((decodedValue & 0xfffffe00) >> 9);
+    if (!decodedValue) {
+        return 0xffff;
+    }
+    uint32_t ret = (1000000 * 60 / 100 + decodedValue / 2) / decodedValue;
+    setDirectionMicros = micros() - start;
+    return ret;
+}
 
 uint16_t getDshotTelemetry(uint8_t index)
 {
@@ -247,18 +299,29 @@ bool pwmStartDshotMotorUpdate(uint8_t motorCount)
     const timeMs_t currentTimeMs = millis();
 #endif
     for (int i = 0; i < motorCount; i++) {
-        if (dmaMotors[i].hasTelemetry) {
 #ifdef STM32F7
-            uint32_t edges = LL_EX_DMA_GetDataLength(dmaMotors[i].dmaRef);
+        uint32_t edges = LL_EX_DMA_GetDataLength(dmaMotors[i].dmaRef);
 #else
-            uint32_t edges = DMA_GetCurrDataCounter(dmaMotors[i].dmaRef);
+        uint32_t edges = DMA_GetCurrDataCounter(dmaMotors[i].dmaRef);
 #endif
+        timeDelta_t usSinceInput = cmpTimeUs(micros(), dmaMotors[i].timer->inputDirectionStampUs);
+        if (!dmaMotors[i].hasTelemetry && usSinceInput >= 0 && usSinceInput < dmaMotors[i].dshotTelemetryDeadtimeUs) {
+                return false;
+        }
+        if (dmaMotors[i].hasTelemetry || dmaMotors[i].isInput) {
             uint16_t value = 0xffff;
             if (edges == 0) {
                 if (dmaMotors[i].useProshot) {
                     value = decodeProshotPacket(dmaMotors[i].dmaBuffer);
                 } else {
                     value = decodeDshotPacket(dmaMotors[i].dmaBuffer);
+                }
+            } else {
+                if (edges < 32 - 7) {
+                    readDoneCount++;
+                    value = decodeJshotPacket(dmaMotors[i].dmaBuffer, 32 - edges);
+                } else {
+                    goto setoutput;
                 }
             }
 #ifdef USE_DSHOT_TELEMETRY_STATS
@@ -284,17 +347,15 @@ bool pwmStartDshotMotorUpdate(uint8_t motorCount)
             updateDshotTelemetryQuality(&dshotTelemetryQuality[i], validTelemetryPacket, currentTimeMs);
 #endif
         } else {
-            timeDelta_t usSinceInput = cmpTimeUs(micros(), dmaMotors[i].timer->inputDirectionStampUs);
-            if (usSinceInput >= 0 && usSinceInput < dmaMotors[i].dshotTelemetryDeadtimeUs) {
-                return false;
-            }
 #ifdef STM32F7
             LL_EX_TIM_DisableIT(dmaMotors[i].timerHardware->tim, dmaMotors[i].timerDmaSource);
 #else
             TIM_DMACmd(dmaMotors[i].timerHardware->tim, dmaMotors[i].timerDmaSource, DISABLE);
 #endif
         }
+    setoutput:
         pwmDshotSetDirectionOutput(&dmaMotors[i], true);
+        dmaMotors[i].hasTelemetry = false;
     }
     dshotEnableChannels(motorCount);
     return true;
