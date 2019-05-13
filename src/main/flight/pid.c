@@ -1507,9 +1507,6 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
                 DEBUG_SET(DEBUG_FF_THUMB, 2, pidData[axis].F);
             }
 
-#if defined(USE_SMART_FEEDFORWARD)
-            applySmartFeedforward(axis);
-#endif
         } else {
             pidData[axis].F = 0;
         }
