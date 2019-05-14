@@ -1141,7 +1141,10 @@ static FAST_CODE_NOINLINE void subTaskRcCommand(timeUs_t currentTimeUs)
 }
 
 // Function for loop trigger
-FAST_CODE void taskMainPidLoop(timeUs_t currentTimeUs)
+#ifndef STM32F7
+FAST_CODE
+#endif
+void taskMainPidLoop(timeUs_t currentTimeUs)
 {
     static uint32_t pidUpdateCounter = 0;
 
