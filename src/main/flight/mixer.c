@@ -296,6 +296,8 @@ static FAST_RAM_ZERO_INIT float idleMinMotorRps;
 static FAST_RAM_ZERO_INIT float idleP;
 #endif
 
+float pidFlyawayScale = 1.0f;
+
 
 uint8_t getMotorCount(void)
 {
@@ -693,15 +695,19 @@ static void applyFlipOverAfterCrashModeToMotors(void)
     }
 }
 
+
 static void applyMixToMotors(float motorMix[MAX_SUPPORTED_MOTORS], motorMixer_t *activeMixer)
 {
     // Now add in the desired throttle, but keep in a range that doesn't clip adjusted
     // roll/pitch/yaw. This could move throttle down, but also up for those low throttle flips.
+    float motorOut[MAX_SUPPORTED_MOTORS];
     for (int i = 0; i < motorCount; i++) {
         float motorOutput = motorOutputMixSign * motorMix[i] + throttle * activeMixer[i].throttle;
 #ifdef USE_THRUST_LINEARIZATION
         motorOutput = pidApplyThrustLinearization(motorOutput);
 #endif
+        motorOut[i] = motorOutput;
+        
         motorOutput = motorOutputMin + motorOutputRange * motorOutput;
 
 #ifdef USE_SERVOS
@@ -721,7 +727,32 @@ static void applyMixToMotors(float motorMix[MAX_SUPPORTED_MOTORS], motorMixer_t 
         }
         motor[i] = motorOutput;
     }
+    static pt1Filter_t flyawayLpf1[MAX_SUPPORTED_MOTORS];
+    static pt1Filter_t flyawayLpf2;
+    static bool inited;
+    if (!inited) {
+        for (int i = 0; i < motorCount; i++) {
+            pt1FilterInit(&flyawayLpf1[i], pt1FilterGain(50, pidGetDT()));
+        }
+        pt1FilterInit(&flyawayLpf2, pt1FilterGain(0.3f, pidGetDT()));
+        inited = true;
+    }
+    float outPower = 0;
+    for (int i = 0; i < motorCount; i++) {
+        float mpHpf = motorOut[i] - pt1FilterApply(&flyawayLpf1[i], motorOut[i]);
+        outPower += mpHpf * mpHpf;
+    }
+    outPower /= motorCount;
+    
+    float mpLpf = pt1FilterApply(&flyawayLpf2, outPower);
+    
+    DEBUG_SET(DEBUG_FLYAWAY, 0, outPower * 1000);
+    DEBUG_SET(DEBUG_FLYAWAY, 1, mpLpf * 1000);
 
+    pidFlyawayScale = constrainf(1.0f - (mpLpf - 0.003f) * 1000, 0.0f, 1.0f);
+    
+    DEBUG_SET(DEBUG_FLYAWAY, 2, pidFlyawayScale * 1000);
+    
     // Disarmed mode
     if (!ARMING_FLAG(ARMED)) {
         for (int i = 0; i < motorCount; i++) {
@@ -794,9 +825,9 @@ FAST_CODE_NOINLINE void mixTable(timeUs_t currentTimeUs, uint8_t vbatPidCompensa
     
     // Calculate and Limit the PID sum
     const float scaledAxisPidRoll =
-        constrainf(pidData[FD_ROLL].Sum, -currentPidProfile->pidSumLimit, currentPidProfile->pidSumLimit) / PID_MIXER_SCALING;
+        constrainf(pidData[FD_ROLL].Sum * pidFlyawayScale, -currentPidProfile->pidSumLimit, currentPidProfile->pidSumLimit) / PID_MIXER_SCALING;
     const float scaledAxisPidPitch =
-        constrainf(pidData[FD_PITCH].Sum, -currentPidProfile->pidSumLimit, currentPidProfile->pidSumLimit) / PID_MIXER_SCALING;
+        constrainf(pidData[FD_PITCH].Sum * pidFlyawayScale, -currentPidProfile->pidSumLimit, currentPidProfile->pidSumLimit) / PID_MIXER_SCALING;
 
     uint16_t yawPidSumLimit = currentPidProfile->pidSumLimitYaw;
 
@@ -808,7 +839,7 @@ FAST_CODE_NOINLINE void mixTable(timeUs_t currentTimeUs, uint8_t vbatPidCompensa
 #endif // USE_YAW_SPIN_RECOVERY
 
     float scaledAxisPidYaw =
-        constrainf(pidData[FD_YAW].Sum, -yawPidSumLimit, yawPidSumLimit) / PID_MIXER_SCALING;
+        constrainf(pidData[FD_YAW].Sum * pidFlyawayScale, -yawPidSumLimit, yawPidSumLimit) / PID_MIXER_SCALING;
 
     if (!mixerConfig()->yaw_motors_reversed) {
         scaledAxisPidYaw = -scaledAxisPidYaw;
