@@ -175,6 +175,8 @@ MCU_COMMON_SRC = \
             drivers/bus_i2c_stm32f10x.c \
             drivers/bus_spi_stdperiph.c \
             drivers/dma_stm32f4xx.c \
+            drivers/dshot_bb.c \
+            drivers/dshot_bb_stdperiph.c \
             drivers/inverter.c \
             drivers/light_ws2811strip_stdperiph.c \
             drivers/transponder_ir_io_stdperiph.c \

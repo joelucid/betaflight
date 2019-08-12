@@ -33,6 +33,7 @@ typedef struct motorDevConfig_s {
     uint8_t  useDshotTelemetry;
     ioTag_t  ioTags[MAX_SUPPORTED_MOTORS];
     uint8_t  motorTransportProtocol;
+    uint8_t  useBBShot;
 } motorDevConfig_t;
 
 typedef struct motorConfig_s {

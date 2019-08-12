@@ -174,6 +174,8 @@ MCU_COMMON_SRC = \
             drivers/transponder_ir_io_hal.c \
             drivers/bus_spi_ll.c \
             drivers/persistent.c \
+            drivers/dshot_bb.c \
+            drivers/dshot_bb_ll.c \
             drivers/pwm_output_dshot_hal.c \
             drivers/pwm_output_dshot_shared.c \
             drivers/timer_hal.c \

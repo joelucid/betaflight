@@ -28,6 +28,11 @@
 #include "drivers/timer_def.h"
 
 const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
+    DEF_TIM(TIM8,  CH1,  PC6,  TIM_USE_BBSHOT,              0, 0), // UART6_TX
+    DEF_TIM(TIM8,  CH2,  PC7,  TIM_USE_BBSHOT,              0, 1), // UART6_RX
+    DEF_TIM(TIM8,  CH3,  PC8,  TIM_USE_BBSHOT,              0, 1), // MST6 Collision with TX/RX6 (useful for OCTO)
+    DEF_TIM(TIM8,  CH4,  PC9,  TIM_USE_NONE,                0, 0), // MST5 Collision with TX/RX6 (useful for OCTO)
+
     // Main motors
     DEF_TIM(TIM3,  CH2,  PB5,  TIM_USE_MOTOR,               0, 0), // M1
     DEF_TIM(TIM3,  CH1,  PB4,  TIM_USE_MOTOR,               0, 0), // M2
@@ -35,8 +40,8 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     DEF_TIM(TIM3,  CH4,  PB1,  TIM_USE_MOTOR,               0, 0), // M4
 
     // Additional motors/servos
-    DEF_TIM(TIM8,  CH4,  PC9,  TIM_USE_NONE,                0, 0), // MST5 Collision with TX/RX6 (useful for OCTO)
-    DEF_TIM(TIM8,  CH3,  PC8,  TIM_USE_NONE,                0, 1), // MST6 Collision with TX/RX6 (useful for OCTO)
+    //DEF_TIM(TIM8,  CH4,  PC9,  TIM_USE_NONE,                0, 0), // MST5 Collision with TX/RX6 (useful for OCTO)
+    //DEF_TIM(TIM8,  CH3,  PC8,  TIM_USE_NONE,                0, 1), // MST6 Collision with TX/RX6 (useful for OCTO)
     DEF_TIM(TIM11, CH1,  PB9,  TIM_USE_NONE,                0, 0), // I2C1_SDA, MST7
     DEF_TIM(TIM10, CH1,  PB8,  TIM_USE_NONE,                0, 0), // I2C1_SCL, MST8
 
@@ -61,8 +66,8 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     DEF_TIM(TIM5,  CH1,  PA0,  TIM_USE_NONE,                0, 0), // UART4_TX
     DEF_TIM(TIM5,  CH2,  PA1,  TIM_USE_NONE,                0, 0), // UART4_RX
 
-    DEF_TIM(TIM8,  CH1,  PC6,  TIM_USE_NONE,                0, 0), // UART6_TX Collision with MS1&2 (useful for OCTO)
-    DEF_TIM(TIM8,  CH2,  PC7,  TIM_USE_NONE,                0, 1), // UART6_RX Collision with MS1&2 (useful for OCTO)
+    // DEF_TIM(TIM8,  CH1,  PC6,  TIM_USE_NONE,                0, 0), // UART6_TX Collision with MS1&2 (useful for OCTO)
+    // DEF_TIM(TIM8,  CH2,  PC7,  TIM_USE_NONE,                0, 1), // UART6_RX Collision with MS1&2 (useful for OCTO)
 
     // Others
     DEF_TIM(TIM1,  CH3,  PA10, TIM_USE_NONE,                0, 0), // CS_ExtIMU, Collision with LED_STRIP

@@ -73,6 +73,10 @@ void pgResetFn_motorConfig(motorConfig_t *motorConfig)
 #endif
     
     motorConfig->motorPoleCount = 14;   // Most brushes motors that we use are 14 poles
+
+#ifdef USE_BBSHOT
+    motorConfig->dev.useBBShot = ENABLE_BBSHOT;
+#endif
 }
 
 #endif // USE_MOTOR

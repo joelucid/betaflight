@@ -82,6 +82,7 @@ typedef enum {
     TIM_USE_TRANSPONDER    = 0x20,
     TIM_USE_BEEPER         = 0x40,
     TIM_USE_CAMERA_CONTROL = 0x80,
+    TIM_USE_BBSHOT         = 0x100, // BB-Dshot pacer
 } timerUsageFlag_e;
 
 // use different types from capture and overflow - multiple overflow handlers are implemented as linked list
@@ -281,6 +282,7 @@ const timerHardware_t *timerGetByTag(ioTag_t ioTag);
 const timerHardware_t *timerAllocate(ioTag_t ioTag, resourceOwner_e owner, uint8_t resourceIndex);
 const timerHardware_t *timerGetByTagAndIndex(ioTag_t ioTag, unsigned timerIndex);
 ioTag_t timerioTagGetByUsage(timerUsageFlag_e usageFlag, uint8_t index);
+const timerHardware_t *timerGetByUsage(timerUsageFlag_e usageFlag, uint8_t index);
 
 #if defined(USE_HAL_DRIVER)
 TIM_HandleTypeDef* timerFindTimerHandle(TIM_TypeDef *tim);

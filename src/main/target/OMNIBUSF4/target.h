@@ -67,6 +67,8 @@
 #define ENABLE_DSHOT_DMAR       true
 #endif
 
+#define ENABLE_BBSHOT           true
+
 #ifdef OMNIBUSF4SD
 // These inverter control pins collide with timer channels on CH5 and CH6 pads.
 // Users of these timers/pads must un-map the inverter assignment explicitly.
@@ -85,6 +87,9 @@
 
 #define USE_GYRO
 #define USE_GYRO_SPI_MPU6000
+
+//#define USE_FAKE_GYRO
+//#define USE_FAKE_ACC
 
 #define GYRO_1_CS_PIN           PA4
 #define GYRO_1_SPI_INSTANCE     SPI1
@@ -261,10 +266,10 @@
 #define I2C_DEVICE              (I2CDEV_2)
 
 #define USE_ADC
-#define ADC_INSTANCE            ADC2
-#define ADC2_DMA_OPT            1  // DMA 2 Stream 3 Channel 1 (compat default)
-//#define ADC_INSTANCE            ADC1
-//#define ADC1_DMA_OPT            1  // DMA 2 Stream 4 Channel 0 (compat default)
+//#define ADC_INSTANCE            ADC2
+//#define ADC2_DMA_OPT            1  // DMA 2 Stream 3 Channel 1 (compat default)
+#define ADC_INSTANCE            ADC1
+#define ADC1_DMA_OPT            1  // DMA 2 Stream 4 Channel 0 (compat default)
 
 #define CURRENT_METER_ADC_PIN   PC1  // Direct from CRNT pad (part of onboard sensor for Pro)
 #define VBAT_ADC_PIN            PC2  // 11:1 (10K + 1K) divider

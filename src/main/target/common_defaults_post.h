@@ -659,5 +659,14 @@
 #ifndef MAX_SUPPORTED_MOTORS
 #define MAX_SUPPORTED_MOTORS 8
 #endif
+#ifndef MAX_SUPPORTED_MOTOR_PORTS
+#define MAX_SUPPORTED_MOTOR_PORTS 3 // Max direct dshot port groups, limited by number of usable timer (TIM1 and TIM8) x number of channels per timer (4), 3 is enough to cover motor pins on GPIOA, GPIOB and GPIOC.
+#endif
 #define MAX_SUPPORTED_SERVOS 8
+#endif
+
+#ifdef USE_BBSHOT
+#ifndef ENABLE_BBSHOT
+#define ENABLE_BBSHOT false
+#endif
 #endif

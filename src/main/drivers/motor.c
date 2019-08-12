@@ -37,6 +37,7 @@
 #include "drivers/motor.h"
 #include "drivers/pwm_output.h" // for PWM_TYPE_* and others
 #include "drivers/time.h"
+#include "drivers/dshot_bb.h"
 #include "drivers/dshot_dpwm.h"
 
 #include "fc/rc_controls.h" // for flight3DConfig_t
@@ -206,7 +207,15 @@ void motorDevInit(const motorDevConfig_t *motorConfig, uint16_t idlePulse, uint8
     case PWM_TYPE_DSHOT600:
     case PWM_TYPE_DSHOT1200:
     case PWM_TYPE_PROSHOT1000:
-        motorDevice = dshotPwmDevInit(motorConfig, idlePulse, motorCount, useUnsyncedPwm);
+#ifdef USE_BBSHOT
+        if (motorConfig->useBBShot) {
+            motorDevice = bbshotDevInit(motorConfig, idlePulse, motorCount, useUnsyncedPwm);
+        } else
+#endif
+        {
+            motorDevice = dshotPwmDevInit(motorConfig, idlePulse, motorCount, useUnsyncedPwm);
+        }
+
         isDshot = true;
         break;
 #endif

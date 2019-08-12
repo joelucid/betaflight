@@ -37,11 +37,16 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     DEF_TIM(TIM12, CH2, PB15, TIM_USE_PWM,                 0, 0), // S2_IN
 #endif
 
-    DEF_TIM(TIM8,  CH1, PC6,  TIM_USE_PWM,                 0, 0), // S3_IN, UART6_TX
-    DEF_TIM(TIM8,  CH2, PC7,  TIM_USE_PWM,                 0, 0), // S4_IN, UART6_RX
-    DEF_TIM(TIM8,  CH3, PC8,  TIM_USE_PWM,                 0, 0), // S5_IN
-    DEF_TIM(TIM8,  CH4, PC9,  TIM_USE_PWM,                 0, 0), // S6_IN
+    // TIM1 or TIM8 can be used as GPIO bit-banging DShot (BBShot) pacing timers.
+    //   - One timer channel is required per GPIO port group.
+    //   - Only timer function is used; associated pin is free to be used for other functions.
+    DEF_TIM(TIM8,  CH1, PC6,  TIM_USE_BBSHOT,              1, 1), // S3_IN, UART6_TX D(2,2,7)
+    DEF_TIM(TIM8,  CH2, NONE, TIM_USE_BBSHOT,              1, 1), // S4_IN, UART6_RX D(2,3,7)
+    DEF_TIM(TIM8,  CH3, NONE, TIM_USE_BBSHOT,              1, 1), // S5_IN D(2,4,7)
+    DEF_TIM(TIM8,  CH4, NONE, TIM_USE_BBSHOT,              1, 0), // S6_IN D(2,7,7)
 
+    // With BBShot, motor pins are not required to be associated with timers.
+    // But the timers are required for other timer based protocol implementations.
     DEF_TIM(TIM3,  CH3, PB0,  TIM_USE_MOTOR,               0, 0), // S1_OUT D1_ST7
     DEF_TIM(TIM3,  CH4, PB1,  TIM_USE_MOTOR,               0, 0), // S2_OUT D1_ST2
     DEF_TIM(TIM2,  CH4, PA3,  TIM_USE_MOTOR,               0, 1), // S3_OUT D1_ST6
