@@ -12,7 +12,6 @@ void decodeBitBangTelemetryPacket(
     uint32_t lastValue = 0;
     uint32_t sequenceLen[bitCount];
     uint32_t started = 0;
-    uint32_t stopped = 0;
     uint32_t bits[bitCount];
 
     memset(values, 0, sizeof(uint32_t) * bitCount);
@@ -26,14 +25,11 @@ void decodeBitBangTelemetryPacket(
         for (unsigned int n = 0; n < bitCount; n++) {
             const uint32_t curMask = bitMasks[n];
             if (started & curMask) {
-                if (changed & curMask && (!(stopped & curMask))) {
+                if (changed & curMask) {
                     int len = ((sequenceLen[n] + 1) * 10 + 15) / 30;
                     values[n] <<= len;
                     values[n] |= 1 << (len - 1);
                     bits[n] += len;
-                    if (bits[n] >= 21) {
-                        stopped |= curMask;
-                    }
                     sequenceLen[n] = 0;
                 } else {
                     sequenceLen[n]++;
