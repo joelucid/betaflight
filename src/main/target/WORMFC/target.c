@@ -42,5 +42,6 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     DEF_TIM(TIM1, CH3, PA10, TIM_USE_MOTOR | TIM_USE_LED, 0, 1 ),    // S5_OUT - TIM1_UP - BURST
     DEF_TIM(TIM1, CH1, PA8,  TIM_USE_MOTOR, 0, 1 ),                  // S6_OUT - TIM1_UP - BURST
 #endif
+    BBSHOT_PACER_TIMER_CHANNELS
 };
 

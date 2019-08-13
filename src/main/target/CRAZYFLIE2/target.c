@@ -40,4 +40,5 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     DEF_TIM(TIM2,  CH1, PA15, TIM_USE_MOTOR, 0, 0 ), // PWM3 - OUT3 (Motor 3)
     DEF_TIM(TIM4,  CH4, PB9,  TIM_USE_MOTOR, 0, 0 ), // PWM4 - OUT4 (Motor 4)
 #endif
+    BBSHOT_PACER_TIMER_CHANNELS
 };

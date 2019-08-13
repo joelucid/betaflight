@@ -63,7 +63,7 @@
 #define USE_BARO_MS5611
 #define USE_BARO_BMP388
 
-#define USABLE_TIMER_CHANNEL_COUNT 9
+#define USABLE_TIMER_CHANNEL_COUNT (9 + BBSHOT_PACER_COUNT)
 
 #define USE_VCP
 #define USE_USB_DETECT
@@ -159,4 +159,4 @@
 #define TARGET_IO_PORTE 0xffff
 #define TARGET_IO_PORTF 0xffff
 
-#define USED_TIMERS  ( TIM_N(2) | TIM_N(3) | TIM_N(4) | TIM_N(8) | TIM_N(9) | TIM_N(12) )
+#define USED_TIMERS (( TIM_N(2) | TIM_N(3) | TIM_N(4) | TIM_N(8) | TIM_N(9) | TIM_N(12) ) | BBSHOT_PACER_TIMERS))

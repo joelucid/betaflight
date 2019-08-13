@@ -129,9 +129,9 @@
 #define TARGET_IO_PORTD (0xffff & ~(BIT(0)|BIT(1)))
 #define TARGET_IO_PORTE (0xffff & ~(BIT(15)))
 
-#define USABLE_TIMER_CHANNEL_COUNT 10
+#define USABLE_TIMER_CHANNEL_COUNT (10 + BBSHOT_PACER_COUNT)
 
 // Used Timers
-//#define USED_TIMERS ( TIM_N(1) | TIM_N(2) | TIM_N(3) | TIM_N(4) | TIM_N(5) | TIM_N(8) | TIM_N(9) | TIM_N(12))
+//#define USED_TIMERS (( TIM_N(1) | TIM_N(2) | TIM_N(3) | TIM_N(4) | TIM_N(5) | TIM_N(8) | TIM_N(9) | TIM_N(12)) | BBSHOT_PACER_TIMERS))
 // Defined Timers in timer.c
-#define USED_TIMERS ( TIM_N(1) | TIM_N(3) | TIM_N(4))
+#define USED_TIMERS (( TIM_N(1) | TIM_N(3) | TIM_N(4)) | BBSHOT_PACER_TIMERS))

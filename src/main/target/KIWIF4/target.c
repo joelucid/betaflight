@@ -39,4 +39,5 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
 #else
     DEF_TIM(TIM4, CH2, PB7, TIM_USE_LED,   0, 0), // LED
 #endif
+    BBSHOT_PACER_TIMER_CHANNELS
 };

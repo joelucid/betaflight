@@ -41,7 +41,5 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     DEF_TIM(TIM9,  CH1,  PA2,  TIM_USE_NONE,  0, 0), // UART2_TX
     DEF_TIM(TIM9,  CH2,  PA3,  TIM_USE_NONE,  0, 0), // UART2_RX
 
-    // BBShot pacer
-    DEF_TIM(TIM1,  CH1,  PA8,  TIM_USE_BBSHOT, 0, 1), // Use PA8 for debug monitor XXX Doesn't work without this
-    DEF_TIM(TIM1,  CH2,  PA9,  TIM_USE_BBSHOT, 0, 1), // Use PA9 for debug monitor XXX Doesn't work without this
+    BBSHOT_PACER_TIMER_CHANNELS
 };

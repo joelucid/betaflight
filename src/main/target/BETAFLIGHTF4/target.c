@@ -46,4 +46,5 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     DEF_TIM(TIM9,  CH2, PA3,  TIM_USE_NONE,                0, 0), // RX2 RX only
     DEF_TIM(TIM2,  CH3, PB10, TIM_USE_NONE,                0, 0), // TX3 Bidir
     DEF_TIM(TIM2,  CH4, PB11, TIM_USE_NONE,                0, 0), // RX3 Bidir
+    BBSHOT_PACER_TIMER_CHANNELS
 };

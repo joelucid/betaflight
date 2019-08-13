@@ -211,10 +211,10 @@
 
 /*--------------TIMERS-------------*/
 #if defined(FF_FORTINIF4_REV03)
-#define USABLE_TIMER_CHANNEL_COUNT  7
-#define USED_TIMERS             ( TIM_N(1) | TIM_N(2) | TIM_N(3) | TIM_N(4) )
+#define USABLE_TIMER_CHANNEL_COUNT ( 7 + BBSHOT_PACER_COUNT)
+#define USED_TIMERS (( TIM_N(1) | TIM_N(2) | TIM_N(3) | TIM_N(4) ) | BBSHOT_PACER_TIMERS))
 #else
-#define USABLE_TIMER_CHANNEL_COUNT  6
-#define USED_TIMERS             ( TIM_N(2) | TIM_N(3) | TIM_N(4) )
+#define USABLE_TIMER_CHANNEL_COUNT ( 6 + BBSHOT_PACER_COUNT)
+#define USED_TIMERS (( TIM_N(2) | TIM_N(3) | TIM_N(4) ) | BBSHOT_PACER_TIMERS))
 #endif
 /*---------------------------------*/

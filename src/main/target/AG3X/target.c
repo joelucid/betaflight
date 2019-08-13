@@ -60,4 +60,6 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     // I2C2
     DEF_TIM(TIM2,  CH3, PB10, TIM_USE_NONE,   0, 0), // SCL2   D(1,1)
     DEF_TIM(TIM2,  CH4, PB11, TIM_USE_NONE,   0, 0), // SDA2   D(1,7) D(1,6)
+    BBSHOT_PACER_TIMER_CHANNELS
+    BBSHOT_PACER_TIMER_CHANNELS
 };

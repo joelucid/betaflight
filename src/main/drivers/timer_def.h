@@ -605,6 +605,16 @@
 
 // AF table
 
+// NONE
+#define DEF_TIM_AF__NONE__TCH_TIM1_CH1     D(1, 1)
+#define DEF_TIM_AF__NONE__TCH_TIM1_CH2     D(1, 1)
+#define DEF_TIM_AF__NONE__TCH_TIM1_CH3     D(1, 1)
+#define DEF_TIM_AF__NONE__TCH_TIM1_CH4     D(1, 1)
+#define DEF_TIM_AF__NONE__TCH_TIM8_CH1     D(3, 8)
+#define DEF_TIM_AF__NONE__TCH_TIM8_CH2     D(3, 8)
+#define DEF_TIM_AF__NONE__TCH_TIM8_CH3     D(3, 8)
+#define DEF_TIM_AF__NONE__TCH_TIM8_CH4     D(3, 8)
+
 //PORTA
 #define DEF_TIM_AF__PA0__TCH_TIM2_CH1     D(1, 2)
 #define DEF_TIM_AF__PA1__TCH_TIM2_CH2     D(1, 2)
@@ -1004,4 +1014,41 @@
 #define DEF_TIM_AF__PI6__TCH_TIM8_CH2     D(3, 8)
 #define DEF_TIM_AF__PI7__TCH_TIM8_CH3     D(3, 8)
 
+
+#endif
+
+
+#ifdef USE_BBSHOT
+#if defined(STM32F411xE)
+#define BBSHOT_PACER_TIMER_CHANNELS                     \
+    DEF_TIM(TIM1,  CH1, NONE,  TIM_USE_BBSHOT, 0, 1),   \
+    DEF_TIM(TIM1,  CH1, NONE,  TIM_USE_BBSHOT, 0, 2),   \
+    DEF_TIM(TIM1,  CH2, NONE,  TIM_USE_BBSHOT, 0, 1),   \
+    DEF_TIM(TIM1,  CH3, NONE,  TIM_USE_BBSHOT, 0, 1),   \
+    DEF_TIM(TIM1,  CH4, NONE,  TIM_USE_BBSHOT, 0, 0),
+#define BBSHOT_PACER_COUNT 5
+#define BBSHOT_PACER_TIMERS TIM_N(1)
+#elif defined(STM32F40_41xxx) || defined(STM32F7)
+#define BBSHOT_PACER_TIMER_CHANNELS                     \
+    DEF_TIM(TIM1,  CH1, NONE,  TIM_USE_BBSHOT, 0, 1),   \
+    DEF_TIM(TIM1,  CH1, NONE,  TIM_USE_BBSHOT, 0, 2),   \
+    DEF_TIM(TIM1,  CH2, NONE,  TIM_USE_BBSHOT, 0, 1),   \
+    DEF_TIM(TIM1,  CH3, NONE,  TIM_USE_BBSHOT, 0, 1),   \
+    DEF_TIM(TIM1,  CH4, NONE,  TIM_USE_BBSHOT, 0, 0),   \
+                                                        \
+    DEF_TIM(TIM8,  CH1, NONE,  TIM_USE_BBSHOT, 0, 1),   \
+    DEF_TIM(TIM8,  CH2, NONE,  TIM_USE_BBSHOT, 0, 1),   \
+    DEF_TIM(TIM8,  CH3, NONE,  TIM_USE_BBSHOT, 0, 1),   \
+    DEF_TIM(TIM8,  CH4, NONE,  TIM_USE_BBSHOT, 0, 0),
+#define BBSHOT_PACER_COUNT 9
+#define BBSHOT_PACER_TIMERS TIM_N(1) | TIM_N(8)
+#else
+#define BBSHOT_PACER_TIMER_CHANNELS
+#define BBSHOT_PACER_COUNT 0
+#define BBSHOT_PACER_TIMERS 0
+#endif
+#else
+#define BBSHOT_PACER_TIMER_CHANNELS
+#define BBSHOT_PACER_COUNT 0
+#define BBSHOT_PACER_TIMERS 0
 #endif

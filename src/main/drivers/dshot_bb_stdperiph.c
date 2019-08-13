@@ -271,4 +271,10 @@ void bbDMA_Cmd(bbPort_t *bbPort, FunctionalState NewState)
 {
     xDMA_Cmd(bbPort->dmaResource, NewState);
 }
+
+int bbDMA_Count(bbPort_t *bbPort)
+{
+    return xDMA_GetCurrDataCounter(bbPort->dmaResource);
+}
+
 #endif // USE_DSHOT_BB

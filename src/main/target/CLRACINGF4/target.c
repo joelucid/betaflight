@@ -40,4 +40,5 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     DEF_TIM(TIM3,  CH1,  PB4, TIM_USE_BEEPER,              0, 0), // BEEPER PWM
     DEF_TIM(TIM4,  CH3,  PB8, TIM_USE_MOTOR | TIM_USE_LED, 0, 0), // LED & MOTOR5 D1_ST7
 
+    BBSHOT_PACER_TIMER_CHANNELS
 };

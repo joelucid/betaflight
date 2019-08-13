@@ -38,11 +38,11 @@
 #endif
 
 #if defined(CRAZYFLIE2BQ)
-#define USABLE_TIMER_CHANNEL_COUNT 5
-#define USED_TIMERS             ( TIM_N(2) | TIM_N(3) | TIM_N(14) )
+#define USABLE_TIMER_CHANNEL_COUNT (5 + BBSHOT_PACER_COUNT)
+#define USED_TIMERS (( TIM_N(2) | TIM_N(3) | TIM_N(14) ) | BBSHOT_PACER_TIMERS))
 #else
-#define USABLE_TIMER_CHANNEL_COUNT 4
-#define USED_TIMERS             ( TIM_N(2) | TIM_N(4) )
+#define USABLE_TIMER_CHANNEL_COUNT (4 + BBSHOT_PACER_COUNT)
+#define USED_TIMERS (( TIM_N(2) | TIM_N(4) ) | BBSHOT_PACER_TIMERS))
 #endif
 
 #define LED0_PIN                PD2

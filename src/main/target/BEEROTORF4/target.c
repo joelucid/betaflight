@@ -40,4 +40,5 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     DEF_TIM(TIM4, CH4,  PB9, TIM_USE_MOTOR,                     0, 0), // M8 - no DMA
 
     DEF_TIM(TIM4, CH3,  PB8, TIM_USE_LED | TIM_USE_TRANSPONDER, 0, 0), // LED_STRIP / TRANSPONDER - DMA1_ST7 (can be used for DShot, conflicts with OSD TX)
+    BBSHOT_PACER_TIMER_CHANNELS
 };

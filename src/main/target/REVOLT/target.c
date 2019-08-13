@@ -36,4 +36,5 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     DEF_TIM(TIM2,  CH3, PA2,  TIM_USE_MOTOR,               0, 0), // Motor 4
 
     DEF_TIM(TIM4,  CH1, PB6,  TIM_USE_LED,                 0, 0), // LED for REVOLT
+    BBSHOT_PACER_TIMER_CHANNELS
 };

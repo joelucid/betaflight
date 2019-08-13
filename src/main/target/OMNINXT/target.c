@@ -71,4 +71,6 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
 
     // Others
     DEF_TIM(TIM1,  CH3,  PA10, TIM_USE_NONE,                0, 0), // CS_ExtIMU, Collision with LED_STRIP
+    BBSHOT_PACER_TIMER_CHANNELS
+    BBSHOT_PACER_TIMER_CHANNELS
 };

@@ -86,6 +86,7 @@ bool cliMode = false;
 #include "drivers/sound_beeper.h"
 #include "drivers/stack_check.h"
 #include "drivers/system.h"
+#include "drivers/telemetry_decode.h"
 #include "drivers/time.h"
 #include "drivers/timer.h"
 #include "drivers/transponder_ir.h"
@@ -5833,12 +5834,11 @@ static void cliDshotTelemetryInfo(char *cmdline)
     UNUSED(cmdline);
 
     if (useDshotTelemetry) {
-        cliPrintLinef("Dshot reads: %u", readDoneCount);
-        cliPrintLinef("Dshot invalid pkts: %u", dshotInvalidPacketCount);
+        cliPrintLinef("Dshot reads: %u", dshotTelemetryState.readCount);
+        cliPrintLinef("Dshot invalid pkts: %u", dshotTelemetryState.invalidPacketCount);
         uint32_t directionChangeCycles = dshotDMAHandlerCycleCounters.changeDirectionCompletedAt - dshotDMAHandlerCycleCounters.irqAt;
         uint32_t directionChangeDurationUs = clockCyclesToMicros(directionChangeCycles);
         cliPrintLinef("Dshot directionChange cycles: %u, micros: %u", directionChangeCycles, directionChangeDurationUs);
-        cliPrintLinef("Dshot packet decode micros: %u", decodePacketDurationUs);
         cliPrintLinefeed();
 
 #ifdef USE_DSHOT_TELEMETRY_STATS
@@ -5867,12 +5867,19 @@ static void cliDshotTelemetryInfo(char *cmdline)
         cliPrintLinefeed();
 
         const int len = MAX_GCR_EDGES;
+#ifdef DEBUG_BBDECODE
+        extern uint16_t bbBuffer[134];
+        for (int i = 0; i < 134; i++) {
+            cliPrintf("%u ", (int)bbBuffer[i]);
+        }
+        cliPrintLinefeed();
+#endif
         for (int i = 0; i < len; i++) {
-            cliPrintf("%u ", (int)inputBuffer[i]);
+            cliPrintf("%u ", (int)dshotTelemetryState.inputBuffer[i]);
         }
         cliPrintLinefeed();
         for (int i = 1; i < len; i++) {
-            cliPrintf("%u ", (int)(inputBuffer[i]  - inputBuffer[i-1]));
+            cliPrintf("%u ", (int)(dshotTelemetryState.inputBuffer[i]  - dshotTelemetryState.inputBuffer[i-1]));
         }
         cliPrintLinefeed();
     } else {
@@ -6518,4 +6525,5 @@ void cliEnter(serialPort_t *serialPort)
     resetCommandBatch();
 #endif
 }
+
 #endif // USE_CLI

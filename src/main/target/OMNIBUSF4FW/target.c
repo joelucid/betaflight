@@ -61,4 +61,5 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     DEF_TIM(TIM1,  CH3, PA10, TIM_USE_NONE,            0, 0), // UART1_RX
     DEF_TIM(TIM5,  CH2, PA1,  TIM_USE_NONE,            0, 0), // UART4_RX
     DEF_TIM(TIM9,  CH1, PA2,  TIM_USE_NONE,            0, 0), // UART2_TX
+    BBSHOT_PACER_TIMER_CHANNELS
 };

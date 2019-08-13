@@ -167,6 +167,8 @@ typedef struct bbMotor_s {
     dshotProtocolControl_t protocolControl;
     int pinIndex;            // pinIndex of this motor output within a group that bbPort points to
     IO_t io;                 // IO_t for this output
+    uint8_t output;
+    uint32_t iocfg;
     bbPort_t *bbPort;
     bool configured;
     bool enabled;
@@ -218,6 +220,8 @@ void bbTIM_TimeBaseInit(bbPort_t *bbPort, uint16_t period);
 void bbTIM_DMACmd(TIM_TypeDef* TIMx, uint16_t TIM_DMASource, FunctionalState NewState);
 void bbDMA_ITConfig(bbPort_t *bbPort);
 void bbDMA_Cmd(bbPort_t *bbPort, FunctionalState NewState);
+int  bbDMA_Count(bbPort_t *bbPort);
+
 
 void dbgPinInit(void);
 void dbgPinHi(int index);

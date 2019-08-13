@@ -123,6 +123,15 @@ uint16_t motorConvertToExternal(float motorValue)
 
 static bool isDshot = false; // XXX Should go somewhere else
 
+void motorPostInit()
+{
+    motorDevice->vTable.postInit();
+}
+
+void motorPostInitNull(void)
+{
+}
+
 static bool motorEnableNull(void)
 {
     return false;
@@ -170,6 +179,7 @@ static uint16_t motorConvertToExternalNull(float value)
 }
 
 static const motorVTable_t motorNullVTable = {
+    .postInit = motorPostInitNull,
     .enable = motorEnableNull,
     .disable = motorDisableNull,
     .updateStart = motorUpdateStartNull,

@@ -129,7 +129,6 @@ common_filter_unittest_SRC := \
 		$(USER_DIR)/common/filter.c \
 		$(USER_DIR)/common/maths.c
 
-
 encoding_unittest_SRC := \
 		$(USER_DIR)/common/encoding.c
 

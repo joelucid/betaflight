@@ -44,4 +44,5 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     //CAMERA_CONTROL
     DEF_TIM(TIM11,       CH1,  PB9,  TIM_USE_CAMERA_CONTROL,     0, 0), // CAMERA_CONTROL
 
+    BBSHOT_PACER_TIMER_CHANNELS
 };

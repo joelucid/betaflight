@@ -38,4 +38,5 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     DEF_TIM(TIM3,  CH4, PB1,  TIM_USE_ANY,                                          0, 0 ), // Camera control
     DEF_TIM(TIM3,  CH4, PC9,  TIM_USE_BEEPER,                                       0, 0 ), // BEEPER PWM
     DEF_TIM(TIM12, CH1, PB14, TIM_USE_BEEPER,                                       0, 0 ), // BEEPER PWM OPT
+    BBSHOT_PACER_TIMER_CHANNELS
 };

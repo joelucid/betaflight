@@ -50,4 +50,5 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
 
     // For ESC serial
     DEF_TIM(TIM9, CH1, PA2,  TIM_USE_NONE,          0, 0 ), // UART2_TX (unwired)
+    BBSHOT_PACER_TIMER_CHANNELS
 };

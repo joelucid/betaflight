@@ -61,7 +61,7 @@
 #define USE_BARO_BMP280
 #define BARO_I2C_INSTANCE           (I2CDEV_2)
 
-#define USABLE_TIMER_CHANNEL_COUNT 16
+#define USABLE_TIMER_CHANNEL_COUNT (16 + BBSHOT_PACER_COUNT)
 
 #define USE_VCP
 #define USE_USB_DETECT
@@ -160,4 +160,4 @@
 #define TARGET_IO_PORTD 0xffff
 #define TARGET_IO_PORTE 0xffff
 
-#define USED_TIMERS  ( TIM_N(2) | TIM_N(3) | TIM_N(4) | TIM_N(5) | TIM_N(8) | TIM_N(9) | TIM_N(12) )
+#define USED_TIMERS (( TIM_N(2) | TIM_N(3) | TIM_N(4) | TIM_N(5) | TIM_N(8) | TIM_N(9) | TIM_N(12) ) | BBSHOT_PACER_TIMERS))

@@ -40,4 +40,5 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     DEF_TIM(TIM4, CH3, PB8, TIM_USE_PWM, 0, 0),     // Cam Control
 
     DEF_TIM(TIM2, CH1, PA15, TIM_USE_LED, 0, 0),    // LED STRIP
+    BBSHOT_PACER_TIMER_CHANNELS
 };

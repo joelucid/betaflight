@@ -41,6 +41,7 @@ typedef enum {
 
 typedef struct motorVTable_s {
     // Common
+    void (*postInit)(void);
     float (*convertExternalToMotor)(uint16_t externalValue);
     uint16_t (*convertMotorToExternal)(float motorValue);
     bool (*enable)(void);
@@ -63,10 +64,12 @@ typedef struct motorDevice_s {
     bool          enabled;
 } motorDevice_t;
 
+void motorPostInitNull();
 void motorWriteNull(uint8_t index, float value);
 bool motorUpdateStartNull(void);
 void motorUpdateCompleteNull(void);
 
+void motorPostInit();
 void motorWriteAll(float *values);
 
 void motorInitEndpoints(float outputLimit, float *outputLow, float *outputHigh, float *disarm, float *deadbandMotor3DHigh, float *deadbandMotor3DLow);

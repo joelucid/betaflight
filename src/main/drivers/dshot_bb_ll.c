@@ -300,4 +300,9 @@ void bbDMA_Cmd(bbPort_t *bbPort, FunctionalState NewState)
         xLL_EX_DMA_DisableResource(bbPort->dmaResource);
     }
 }
+
+int bbDMA_Count(bbPort_t *bbPort)
+{
+    return xLL_EX_DMA_GetDataLength(bbPort->dmaResource);
+}
 #endif // USE_DSHOT_BB

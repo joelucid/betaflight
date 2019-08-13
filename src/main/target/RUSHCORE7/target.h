@@ -134,5 +134,5 @@
 #define TARGET_IO_PORTC         0xffff
 #define TARGET_IO_PORTD         (BIT(2))
 
-#define USABLE_TIMER_CHANNEL_COUNT 9
-#define USED_TIMERS  (TIM_N(1) | TIM_N(2) | TIM_N(3) | TIM_N(8) | TIM_N(9) )
+#define USABLE_TIMER_CHANNEL_COUNT (9 + BBSHOT_PACER_COUNT)
+#define USED_TIMERS ((TIM_N(1) | TIM_N(2) | TIM_N(3) | TIM_N(8) | TIM_N(9) ) | BBSHOT_PACER_TIMERS))

@@ -44,6 +44,7 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     DEF_TIM(TIM9,  CH2, PE6,  TIM_USE_MOTOR,               0, 0), // S3_OUT
     DEF_TIM(TIM3,  CH1, PB4,  TIM_USE_MOTOR,               0, 0), // S9_OUT
 
+    BBSHOT_PACER_TIMER_CHANNELS
 };
 #else
 // STANDARD LAYOUT
@@ -62,5 +63,6 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     DEF_TIM(TIM3,  CH2, PB5,  TIM_USE_MOTOR,               0, 0), // S4_OUT
     DEF_TIM(TIM3,  CH1, PB4,  TIM_USE_MOTOR,               0, 0), // S9_OUT
 
+    BBSHOT_PACER_TIMER_CHANNELS
 };
 #endif

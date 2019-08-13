@@ -37,6 +37,7 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     DEF_TIM(TIM5, CH2, PA1, TIM_USE_MOTOR,             0, 0 ), // SERVO6  DMA1_ST4
     DEF_TIM(TIM4, CH3, PB8, TIM_USE_MOTOR,             0, 0 ), // SERVO7  DMA1_ST7
     DEF_TIM(TIM4, CH4, PB9, TIM_USE_MOTOR,             0, 0 ), // SERVO8  DMA1_ST3
+    BBSHOT_PACER_TIMER_CHANNELS
 };
 
 // Telemetry

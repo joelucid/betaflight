@@ -348,12 +348,12 @@
 #define TARGET_IO_PORTD         (BIT(2))
 
 #if defined(AIRBOTF4) || defined(AIRBOTF4SD)
-#define USABLE_TIMER_CHANNEL_COUNT 13
-#define USED_TIMERS             ( TIM_N(1) | TIM_N(2) | TIM_N(3) | TIM_N(5) | TIM_N(8) | TIM_N(12) )
+#define USABLE_TIMER_CHANNEL_COUNT (13 + BBSHOT_PACER_COUNT)
+#define USED_TIMERS (( TIM_N(1) | TIM_N(2) | TIM_N(3) | TIM_N(5) | TIM_N(8) | TIM_N(12) ) | BBSHOT_PACER_TIMERS))
 #elif defined(ELINF405)
-#define USABLE_TIMER_CHANNEL_COUNT 9
-#define USED_TIMERS             ( TIM_N(1) | TIM_N(2) | TIM_N(3) | TIM_N(4) | TIM_N(8) | TIM_N(11) )
+#define USABLE_TIMER_CHANNEL_COUNT (9 + BBSHOT_PACER_COUNT)
+#define USED_TIMERS (( TIM_N(1) | TIM_N(2) | TIM_N(3) | TIM_N(4) | TIM_N(8) | TIM_N(11) ) | BBSHOT_PACER_TIMERS))
 #else
-#define USABLE_TIMER_CHANNEL_COUNT 12
-#define USED_TIMERS             ( TIM_N(2) | TIM_N(3) | TIM_N(5) | TIM_N(8) | TIM_N(12) )
+#define USABLE_TIMER_CHANNEL_COUNT (12 + BBSHOT_PACER_COUNT)
+#define USED_TIMERS (( TIM_N(2) | TIM_N(3) | TIM_N(5) | TIM_N(8) | TIM_N(12) ) | BBSHOT_PACER_TIMERS))
 #endif

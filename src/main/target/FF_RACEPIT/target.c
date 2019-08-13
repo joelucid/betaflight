@@ -35,4 +35,5 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
 
     DEF_TIM(TIM1, CH3, PA10, TIM_USE_CAMERA_CONTROL,   0, 0 ),
     DEF_TIM(TIM4, CH1, PB6,  TIM_USE_LED,   0, 0 ), // LED    - DMA1_ST3
+    BBSHOT_PACER_TIMER_CHANNELS
 };

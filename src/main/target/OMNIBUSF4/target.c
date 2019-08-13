@@ -40,10 +40,10 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     // TIM1 or TIM8 can be used as GPIO bit-banging DShot (BBShot) pacing timers.
     //   - One timer channel is required per GPIO port group.
     //   - Only timer function is used; associated pin is free to be used for other functions.
-    DEF_TIM(TIM8,  CH1, PC6,  TIM_USE_BBSHOT,              1, 1), // S3_IN, UART6_TX D(2,2,7)
-    DEF_TIM(TIM8,  CH2, NONE, TIM_USE_BBSHOT,              1, 1), // S4_IN, UART6_RX D(2,3,7)
-    DEF_TIM(TIM8,  CH3, NONE, TIM_USE_BBSHOT,              1, 1), // S5_IN D(2,4,7)
-    DEF_TIM(TIM8,  CH4, NONE, TIM_USE_BBSHOT,              1, 0), // S6_IN D(2,7,7)
+    DEF_TIM(TIM8,  CH1, PC6, TIM_USE_PWM,              1, 1), // S3_IN, UART6_TX D(2,2,7)
+    DEF_TIM(TIM8,  CH2, PC7, TIM_USE_PWM,              1, 1), // S4_IN, UART6_RX D(2,3,7)
+    DEF_TIM(TIM8,  CH3, PC8, TIM_USE_PWM,              1, 1), // S5_IN D(2,4,7)
+    DEF_TIM(TIM8,  CH4, PC9, TIM_USE_PWM,              1, 0), // S6_IN D(2,7,7)
 
     // With BBShot, motor pins are not required to be associated with timers.
     // But the timers are required for other timer based protocol implementations.
@@ -61,10 +61,12 @@ const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
     DEF_TIM(TIM5,  CH2, PA1,  TIM_USE_MOTOR | TIM_USE_LED, 0, 0), // S5_OUT
 #endif
 #if defined(SYNERGYF4)
-    DEF_TIM(TIM1,  CH1, PA8,  TIM_USE_CAMERA_CONTROL,      0, 0), // CAM_CTL
+    DEF_TIM(TIM1,  CH1, PA8,  TIM_USE_CAMERA_CONTROL,      0, 2), // CAM_CTL
 #else
-    DEF_TIM(TIM1,  CH1, PA8,  TIM_USE_MOTOR,               0, 0), // S6_OUT
+    DEF_TIM(TIM1,  CH1, PA8,  TIM_USE_MOTOR,               0, 2), // S6_OUT
 #endif
-    DEF_TIM(TIM1,  CH2, PA9,  TIM_USE_NONE,                0, 0), // UART1_TX
-    DEF_TIM(TIM1,  CH3, PA10, TIM_USE_NONE,                0, 0), // UART1_RX
+    DEF_TIM(TIM1,  CH2, PA9,  TIM_USE_NONE,                0, 1), // UART1_TX
+    DEF_TIM(TIM1,  CH3, PA10, TIM_USE_NONE,                0, 1), // UART1_RX
+
+    BBSHOT_PACER_TIMER_CHANNELS
 };

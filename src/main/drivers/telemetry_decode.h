@@ -18,22 +18,11 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdint.h>
+#if defined(USE_DSHOT) && defined(USE_DSHOT_TELEMETRY)
 
-#include "platform.h"
-#include "drivers/io.h"
-#include "drivers/timer.h"
-#include "drivers/timer_def.h"
-#include "drivers/dma.h"
+#define BB_NOEDGE 0xfffe
+#define BB_INVALID 0xffff
 
-const timerHardware_t timerHardware[USABLE_TIMER_CHANNEL_COUNT] = {
-    DEF_TIM(TIM3, CH2, PB5, TIM_USE_MOTOR, 0, 0 ), // PWM1
-    DEF_TIM(TIM3, CH3, PB0, TIM_USE_MOTOR, 0, 0 ), // PWM2
-    DEF_TIM(TIM2, CH2, PB3, TIM_USE_MOTOR, 0, 0 ), // PWM3
-    DEF_TIM(TIM3, CH4, PB1, TIM_USE_MOTOR, 0, 0 ), // PWM4
-    DEF_TIM(TIM5, CH3, PA2, TIM_USE_NONE,  0, 0 ), // PWM5, UART 2 TX
-    DEF_TIM(TIM5, CH4, PA3, TIM_USE_NONE,  0, 0 ), // PWM6, UART 2 RX
-    DEF_TIM(TIM1, CH1, PA8, TIM_USE_LED,   0, 0 ), // Serial LED
-    DEF_TIM(TIM4, CH3, PB8, TIM_USE_NONE,  0, 0 ), // ESC serial (unwired)
-    BBSHOT_PACER_TIMER_CHANNELS
-};
+uint32_t decode_bb(uint16_t buffer[], uint32_t count, uint32_t mask);
+
+#endif
