@@ -129,6 +129,11 @@ common_filter_unittest_SRC := \
 		$(USER_DIR)/common/filter.c \
 		$(USER_DIR)/common/maths.c
 
+decode_bitbang_unittest_SRC:= \
+		$(USER_DIR)/drivers/telemetry_decode.c
+
+decode_bitbang_unittest_DEFINES:= \
+		USE_DSHOT=1 USE_DSHOT_TELEMETRY=1
 
 encoding_unittest_SRC := \
 		$(USER_DIR)/common/encoding.c

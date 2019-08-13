@@ -69,5 +69,6 @@ FAST_CODE void pwmDshotSetDirectionOutput(
 
 bool pwmStartDshotMotorUpdate(void);
 
+
 #endif
 #endif
