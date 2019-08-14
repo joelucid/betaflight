@@ -59,22 +59,21 @@ static void makeArray(
 TEST(BitbangDecodeTest, Test1)
 {
     uint32_t masks[] = { 1, 0x10, 0x100 };
-    float speeds[] = { 3.0f, 3.3f, 2.7f};
+    float speeds[] = { 3.0f, 2.7f, 3.0f};
     uint32_t offsets[] = { 0, 20, 30 };
 
-    for (uint32_t v = 0; v < 0xfff; v++) {
+    for (uint32_t v = 0; v < 0x1000
+             ; v++) {
         uint32_t values[] = { makeGcrValue(v), makeGcrValue(v), makeGcrValue(v) };
-        uint32_t valuesOut[] = { 0, 0, 0 };
+//        uint32_t valuesOut[] = { 0, 0, 0 };
 
         uint32_t array[200];
         memset(array, 0, sizeof(array));
         makeArray(array, sizeof(array)/sizeof(*array), values, masks, speeds, offsets, 3);
         
-        decodeBitBangTelemetryPacket( array, 200, valuesOut, masks, 3);
-        
-        EXPECT_EQ(v, valuesOut[0]);
-        EXPECT_EQ(v, valuesOut[1]);
-        EXPECT_EQ(v, valuesOut[2]);
+        EXPECT_EQ(decodeBitBangTelemetryPacket2( array, 200, 1), v);
+        EXPECT_EQ(decodeBitBangTelemetryPacket2( array, 200, 0x10), v);
+//        EXPECT_EQ(v, valuesOut[0]);
     }
 }
 

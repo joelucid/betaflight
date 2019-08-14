@@ -23,6 +23,9 @@
 void decodeBitBangTelemetryPacket(
     uint32_t buffer[], uint32_t count, uint32_t values[], uint32_t bitMasks[], uint32_t bitCount);
 
+uint32_t decodeBitBangTelemetryPacket2(
+    uint32_t buffer[], uint32_t count, uint32_t mask);
+
 uint32_t convertTelemetryValueToRpmDiv100(uint32_t value);
 
 #endif
