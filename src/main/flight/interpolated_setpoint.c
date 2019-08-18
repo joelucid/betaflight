@@ -37,6 +37,7 @@ static float setpointChangePerIteration[XYZ_AXIS_COUNT];
 static float deflectionChangePerIteration[XYZ_AXIS_COUNT];
 static float setpointReservoir[XYZ_AXIS_COUNT];
 static float deflectionReservoir[XYZ_AXIS_COUNT];
+static float boostAmount[XYZ_AXIS_COUNT];
 
 // Configuration
 static float ffLookaheadLimit;
@@ -68,46 +69,56 @@ FAST_CODE_NOINLINE float interpolatedSpApply(int axis, float pidFrequency, bool 
 
         // get the number of interpolation steps either dynamically based on RX refresh rate
         // or manually based on ffSpread configuration property
+        uint16_t rcIntervalSteps =  (uint16_t) ((currentRxRefreshRate + 1000) * pidFrequency * 1e-6f + 0.5f);
+
         if (ffSpread) {
-            interpolationSteps[axis] = (uint16_t) ((ffSpread + 1.0f) * 0.001f * pidFrequency);
+            interpolationSteps[axis] =  (uint16_t) ((ffSpread + 1.0f) * 0.001f * pidFrequency);
         } else {
-            interpolationSteps[axis] = (uint16_t) ((currentRxRefreshRate + 1000) * pidFrequency * 1e-6f + 0.5f);
+            interpolationSteps[axis] = rcIntervalSteps;
         }
+        interpolationSteps[axis] = MIN(interpolationSteps[axis], 2 * rcIntervalSteps);
 
         // interpolate stick deflection
+        deflectionChangePerIteration[axis] = deflectionReservoir[axis] / rcIntervalSteps;
         deflectionReservoir[axis] += rawDeflection - prevRawDeflection[axis];
-        deflectionChangePerIteration[axis] = deflectionReservoir[axis] / interpolationSteps[axis];
+        deflectionChangePerIteration[axis] += (rawDeflection - prevRawDeflection[axis]) / interpolationSteps[axis];
+
         const float projectedStickPos =
             rawDeflection + deflectionChangePerIteration[axis] * pidFrequency * ffLookaheadLimit;
         projectedSetpoint[axis] = applyCurve(axis, projectedStickPos);
         prevRawDeflection[axis] = rawDeflection;
 
         // apply linear interpolation on setpoint
+        setpointChangePerIteration[axis] = setpointReservoir[axis] / rcIntervalSteps;
         setpointReservoir[axis] += rawSetpoint - prevRawSetpoint[axis];
+        setpointChangePerIteration[axis] += (rawSetpoint - prevRawSetpoint[axis]) / interpolationSteps[axis];
+
         const float ffBoostFactor = pidGetFfBoostFactor();
         if (ffBoostFactor != 0.0f) {
-            const float speed = rawSetpoint - prevRawSetpoint[axis];
-            if (fabsf(rawSetpoint) < 0.95f * ffMaxRate[axis] || fabsf(3.0f * speed) > fabsf(prevSetpointSpeed[axis])) {
+            const float speed = setpointChangePerIteration[axis] * rcIntervalSteps;
+            if (fabsf(rawSetpoint) < 0.95f * ffMaxRate[axis] || fabsf(speed) > 3.0f * fabsf(prevSetpointSpeed[axis])) {
                 const float setpointAcc = speed - prevSetpointSpeed[axis];
-                setpointReservoir[axis] += ffBoostFactor * setpointAcc;
+                boostAmount[axis] = ffBoostFactor * setpointAcc / (uint16_t) ((currentRxRefreshRate + 1000) * pidFrequency * 1e-6f + 0.5f);
+            } else {
+                boostAmount[axis] = 0;
             }
             prevSetpointSpeed[axis] = speed;
         }
 
-        setpointChangePerIteration[axis] = setpointReservoir[axis] / interpolationSteps[axis];
 
         prevRawSetpoint[axis] = rawSetpoint;
         
         if (axis == FD_ROLL) {
             DEBUG_SET(DEBUG_FF_INTERPOLATED, 0, rawDeflection * 100);
             DEBUG_SET(DEBUG_FF_INTERPOLATED, 1, projectedStickPos * 100);
-            DEBUG_SET(DEBUG_FF_INTERPOLATED, 2, projectedSetpoint[axis]);
+            DEBUG_SET(DEBUG_FF_INTERPOLATED, 2, setpointChangePerIteration[axis] * 10);
+            DEBUG_SET(DEBUG_FF_INTERPOLATED, 3, boostAmount[axis] * 10);
         }
     }
 
     if (iterationsSinceLastUpdate[axis] < interpolationSteps[axis]) {
         iterationsSinceLastUpdate[axis]++;
-        pidSetpointDelta = setpointChangePerIteration[axis];
+        pidSetpointDelta = setpointChangePerIteration[axis] + boostAmount[axis];
     }
 
     return pidSetpointDelta;
@@ -121,9 +132,6 @@ FAST_CODE_NOINLINE float applyFfLimit(int axis, float value, float Kp, float cur
     if (ffLookaheadLimit) {
         const float limit = fabsf((projectedSetpoint[axis] - prevRawSetpoint[axis]) * Kp);
         value = constrainf(value, -limit, limit);
-        if (axis == FD_ROLL) {
-            DEBUG_SET(DEBUG_FF_INTERPOLATED, 3, projectedSetpoint[axis]);
-        }
     }
     if (axis == FD_ROLL) {
         DEBUG_SET(DEBUG_FF_LIMIT, 1, value);
