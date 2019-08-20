@@ -55,7 +55,7 @@ FAST_CODE_NOINLINE float interpolatedSpApply(int axis, float pidFrequency, bool 
         
         const float interpolationSteps = currentRxRefreshRate * pidFrequency * 1e-6f;
         const float setpointChange = rawSetpoint - prevRawSetpoint[axis];
-        const float setpointSpeed = setpointSpeed / interpolationSteps;
+        const float setpointSpeed = setpointChange / interpolationSteps;
 
         
         if (ffSpread != 0.0f && currentRxRefreshRate < 15000.0f) {
