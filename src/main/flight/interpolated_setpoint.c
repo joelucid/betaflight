@@ -32,6 +32,7 @@ static float avgSetpointSpeed[XYZ_AXIS_COUNT];
 static float prevSetpointSpeed[XYZ_AXIS_COUNT];
 static float prevRawSetpoint[XYZ_AXIS_COUNT];
 static float boostAmount[XYZ_AXIS_COUNT];
+static float prevBoostAmount[XYZ_AXIS_COUNT];
 
 // Configuration
 static float ffSpread;
@@ -53,11 +54,8 @@ FAST_CODE_NOINLINE float interpolatedSpApply(int axis, float pidFrequency, bool 
         float rawSetpoint = getRawSetpoint(axis); 
         
         const float interpolationSteps = currentRxRefreshRate * pidFrequency * 1e-6f;
-        if (rawSetpoint == prevRawSetpoint[axis] && fabsf(avgSetpointSpeed[axis]) * pidFrequency > 0.4f * 4000.0f) {
-            rawSetpoint += avgSetpointSpeed[axis] * interpolationSteps; 
-        }
-
-        const float setpointSpeed = (rawSetpoint - prevRawSetpoint[axis]) / interpolationSteps;
+        const float setpointChange = rawSetpoint - prevRawSetpoint[axis];
+        const float setpointSpeed = setpointSpeed / interpolationSteps;
 
         
         if (ffSpread != 0.0f && currentRxRefreshRate < 15000.0f) {
@@ -68,13 +66,19 @@ FAST_CODE_NOINLINE float interpolatedSpApply(int axis, float pidFrequency, bool 
         
         const float ffBoostFactor = pidGetFfBoostFactor();
         if (ffBoostFactor != 0.0f) {
+            float boost = 0.0f;
             // prevent kick-back spike at max deflection
             if (fabsf(rawSetpoint) < 0.95f * ffMaxRate[axis] || fabsf(setpointSpeed) > 3.0f * fabsf(prevSetpointSpeed[axis])) {
                 const float setpointAcc = (avgSetpointSpeed[axis] - prevSetpointSpeed[axis]) * interpolationSteps;
-                boostAmount[axis] = ffBoostFactor * setpointAcc / (currentRxRefreshRate * pidFrequency * 1e-6f);
+                boost = ffBoostFactor * setpointAcc / (currentRxRefreshRate * pidFrequency * 1e-6f);
+                if (ffSpread) {
+                    boost = (boost + prevBoostAmount[axis]) / 2;
+                }
+                boostAmount[axis] = (boost + prevBoostAmount[axis]) / 2;
             } else {
                 boostAmount[axis] = 0;
             }
+            prevBoostAmount[axis] = boost;
         }
         prevSetpointSpeed[axis] = setpointSpeed;
         prevRawSetpoint[axis] = rawSetpoint;
@@ -82,6 +86,7 @@ FAST_CODE_NOINLINE float interpolatedSpApply(int axis, float pidFrequency, bool 
         if (axis == FD_ROLL) {
             DEBUG_SET(DEBUG_FF_INTERPOLATED, 0, avgSetpointSpeed[axis] * 10);
             DEBUG_SET(DEBUG_FF_INTERPOLATED, 1, boostAmount[axis] * 10);
+            DEBUG_SET(DEBUG_FF_INTERPOLATED, 2, getRawDeflection(axis) * 1000);
         }
     }
 
