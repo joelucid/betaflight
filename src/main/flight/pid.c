@@ -213,9 +213,8 @@ void resetPidProfile(pidProfile_t *pidProfile)
         .idle_pid_limit = 200,
         .idle_max_increase = 150,
         .ff_interpolate_sp = 0,
-        .ff_spread = 0,
+        .ff_jerk_limit = 150,
         .ff_max_rate_limit = 0,
-        .ff_lookahead_limit = 0,
         .ff_boost = 15,
     );
 #ifndef USE_D_MIN
@@ -315,6 +314,13 @@ static FAST_RAM_ZERO_INIT pt1Filter_t airmodeThrottleLpf2;
 static FAST_RAM_ZERO_INIT pt1Filter_t antiGravityThrottleLpf;
 
 static FAST_RAM_ZERO_INIT float ffBoostFactor;
+static FAST_RAM_ZERO_INIT float ffJerkLimit;
+
+float pidGetJerkLimit()
+{
+    return ffJerkLimit;
+}
+
 
 float pidGetFfBoostFactor()
 {
@@ -460,6 +466,7 @@ void pidInitFilters(const pidProfile_t *pidProfile)
     pt1FilterInit(&antiGravityThrottleLpf, pt1FilterGain(ANTI_GRAVITY_THROTTLE_FILTER_CUTOFF, dT));
 
     ffBoostFactor = (float)pidProfile->ff_boost / 10.0f;
+    ffJerkLimit = (float)pidProfile->ff_jerk_limit / 10.0f;
 }
 
 #ifdef USE_RC_SMOOTHING_FILTER
@@ -583,7 +590,7 @@ static FAST_RAM_ZERO_INIT float dMinSetpointGain;
 #endif
 
 #ifdef USE_INTERPOLATED_SP
-static FAST_RAM_ZERO_INIT bool ffFromInterpolatedSetpoint;
+static FAST_RAM_ZERO_INIT uint8_t ffFromInterpolatedSetpoint;
 #endif
 
 void pidInitConfig(const pidProfile_t *pidProfile)
@@ -1408,7 +1415,7 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
         float pidSetpointDelta = 0;
 #ifdef USE_INTERPOLATED_SP
         if (ffFromInterpolatedSetpoint) {
-            pidSetpointDelta = interpolatedSpApply(axis, pidFrequency, newRcFrame);
+            pidSetpointDelta = interpolatedSpApply(axis, pidFrequency, newRcFrame, ffFromInterpolatedSetpoint);
         } else {
             pidSetpointDelta = currentPidSetpoint - previousPidSetpoint[axis];
         }

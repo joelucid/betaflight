@@ -26,6 +26,6 @@
 #include "flight/pid.h"
 
 void interpolatedSpInit(const pidProfile_t *pidProfile);
-float interpolatedSpApply(int axis, float pidFrequency, bool newRcFrame);
+float interpolatedSpApply(int axis, float pidFrequency, bool newRcFrame, uint8_t type);
 float applyFfLimit(int axis, float value, float Kp, float currentPidSetpoint);
 bool shouldApplyFfLimits(int axis);
