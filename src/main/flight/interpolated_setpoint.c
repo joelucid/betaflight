@@ -59,11 +59,10 @@ FAST_CODE_NOINLINE float interpolatedSpApply(int axis, float pidFrequency, bool 
         
         const float rxInterval = currentRxRefreshRate * 1e-6f;
         const float rxRate = 1.0f / rxInterval;
-        const float rateToStickSlope = 1.0f / getRcCurveSlope(axis, getRawDeflection(axis));
 
         const float setpointSpeed = (rawSetpoint - prevRawSetpoint[axis]) * rxRate;
-        const float setpointAcceleration = (setpointSpeed - prevSetpointSpeed[axis]) * pidGetDT();
-        const float setpointJerk = (setpointAcceleration - prevSetpointAcceleration[axis]);
+        const float setpointAcceleration = (setpointSpeed - prevSetpointSpeed[axis]) * rxRate;
+        const float setpointJerk = (setpointAcceleration - prevSetpointAcceleration[axis]) * rxRate;
         
         setpointDeltaImpl[axis] = setpointSpeed * pidGetDT();
         
@@ -72,7 +71,6 @@ FAST_CODE_NOINLINE float interpolatedSpApply(int axis, float pidFrequency, bool 
         float clip = 1.0f;
         float boostAmount = 0.0f;
         if (ffBoostFactor != 0.0f) {
-            stickJerk = setpointJerk * rateToStickSlope;
             if (pidGetJerkLimit()) {
                 clip = 1 / (1 + fabsf(setpointJerk/pidGetJerkLimit()));
             }
