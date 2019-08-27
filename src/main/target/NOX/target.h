@@ -34,10 +34,12 @@
 #define INVERTER_PIN_UART2      PC14
 
 #define USE_ACC
+#define USE_FAKE_ACC
 #define USE_ACC_SPI_MPU6500
 #define USE_ACC_SPI_MPU6000
 
 #define USE_GYRO
+#define USE_FAKE_GYRO
 #define USE_GYRO_SPI_MPU6500
 #define USE_GYRO_SPI_MPU6000
 
@@ -46,14 +48,16 @@
 
 #define USE_EXTI
 #define USE_GYRO_EXTI
-#define GYRO_1_EXTI_PIN         PA8
-#define USE_MPU_DATA_READY_SIGNAL
+//#define GYRO_1_EXTI_PIN         PA8
+//#define USE_MPU_DATA_READY_SIGNAL
+#define GYRO_1_EXTI_PIN         NONE // Disable for bbshot pacer monitoring
 
 #define USE_BARO
 #define USE_BARO_BMP280
 #define USE_BARO_SPI_BMP280
 #define BARO_SPI_INSTANCE       SPI2
-#define BARO_CS_PIN             PA9
+//#define BARO_CS_PIN             PA9
+#define BARO_CS_PIN             NONE // Disable for bbshot pacer monitoring
 
 #define USE_MAX7456
 #define MAX7456_SPI_INSTANCE    SPI2
@@ -121,7 +125,8 @@
 
 #define TARGET_IO_PORTA (0xffff & ~(BIT(14)|BIT(13)))
 #define TARGET_IO_PORTB (0xffff & ~(BIT(2)|BIT(11)))
-#define TARGET_IO_PORTC (BIT(13)|BIT(14)|BIT(15))
+//#define TARGET_IO_PORTC (BIT(13)|BIT(14)|BIT(15))
+#define TARGET_IO_PORTC 0xffff
 
-#define USABLE_TIMER_CHANNEL_COUNT 8
-#define USED_TIMERS ( TIM_N(1) | TIM_N(2) | TIM_N(3) | TIM_N(4) | TIM_N(5) | TIM_N(9) )
+#define USABLE_TIMER_CHANNEL_COUNT 10
+#define USED_TIMERS ( TIM_N(1) | TIM_N(2) | TIM_N(3) | TIM_N(4) | TIM_N(5) | TIM_N(8) | TIM_N(9) )

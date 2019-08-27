@@ -540,6 +540,7 @@ dbgPin_t dbgPins[] = {
     { .tag = IO_TAG(PA1) },
     { .tag = IO_TAG(PA8) },
 #endif
+    { .tag = IO_TAG(NONE) },
 };
 
 void dbgPinInit(void)
