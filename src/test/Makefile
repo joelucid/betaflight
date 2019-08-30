@@ -129,6 +129,7 @@ common_filter_unittest_SRC := \
 		$(USER_DIR)/common/filter.c \
 		$(USER_DIR)/common/maths.c
 
+
 encoding_unittest_SRC := \
 		$(USER_DIR)/common/encoding.c
 
@@ -156,6 +157,7 @@ flight_mixer_unittest :=  \
 		$(USER_DIR)/flight/mixer.c \
 		$(USER_DIR)/flight/servos.c \
 		$(USER_DIR)/common/maths.c
+
 
 gps_conversion_unittest_SRC := \
 		$(USER_DIR)/common/gps_conversion.c
