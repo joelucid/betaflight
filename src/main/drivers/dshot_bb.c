@@ -641,10 +641,6 @@ typedef struct dbgPin_s {
 } dbgPin_t;
 
 dbgPin_t dbgPins[] = {
-#ifdef OMNIBUSF4SD
-    { .tag = IO_TAG(PA1) },
-    { .tag = IO_TAG(PA8) },
-#endif
     { .tag = IO_TAG(NONE) },
 };
 
