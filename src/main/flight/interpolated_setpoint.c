@@ -51,7 +51,7 @@ void interpolatedSpInit(const pidProfile_t *pidProfile) {
     }
 }
 
-FAST_CODE_NOINLINE float interpolatedSpApply(int axis, float pidFrequency, bool newRcFrame, uint8_t type) {
+FAST_CODE_NOINLINE float interpolatedSpApply(int axis, bool newRcFrame, ffInterpolationType_t type) {
 
     if (newRcFrame) {
         float rawSetpoint = getRawSetpoint(axis); 
@@ -69,8 +69,8 @@ FAST_CODE_NOINLINE float interpolatedSpApply(int axis, float pidFrequency, bool 
         float clip = 1.0f;
         float boostAmount = 0.0f;
         if (ffBoostFactor != 0.0f) {
-            if (pidGetJerkLimit()) {
-                clip = 1 / (1 + fabsf(setpointJerk/pidGetJerkLimit()));
+            if (pidGetJerkLimitInverse()) {
+                clip = 1 / (1 + fabsf(setpointJerk * pidGetJerkLimitInverse()));
                 clip *= clip;
             }
 
@@ -85,14 +85,10 @@ FAST_CODE_NOINLINE float interpolatedSpApply(int axis, float pidFrequency, bool 
         prevRcRawSetpoint[axis] = getRawSetpoint(axis);
         
         if (axis == FD_ROLL) {
-//            DEBUG_SET(DEBUG_FF_INTERPOLATED, 0, rawSetpoint);
             DEBUG_SET(DEBUG_FF_INTERPOLATED, 0, setpointDeltaImpl[axis] * 1000);
             DEBUG_SET(DEBUG_FF_INTERPOLATED, 1, boostAmount * 1000);
             DEBUG_SET(DEBUG_FF_INTERPOLATED, 2, boostAmount * clip * 1000);
-//            DEBUG_SET(DEBUG_FF_INTERPOLATED, 0, setpointSpeed * 1000);
-//            DEBUG_SET(DEBUG_FF_INTERPOLATED, 1, setpointAcceleration * 1000);
             DEBUG_SET(DEBUG_FF_INTERPOLATED, 3, setpointJerk * 1000);
-//            DEBUG_SET(DEBUG_FF_INTERPOLATED, 2, getRawDeflection(axis) * 1000);
         }
         setpointDeltaImpl[axis] += boostAmount * clip;
         if (type == 1) {

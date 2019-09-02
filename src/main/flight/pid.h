@@ -261,4 +261,4 @@ float pidGetPreviousSetpoint(int axis);
 float pidGetDT();
 float pidGetPidFrequency();
 float pidGetFfBoostFactor();
-float pidGetJerkLimit();
+float pidGetJerkLimitInverse();
