@@ -52,7 +52,8 @@ void interpolatedSpInit(const pidProfile_t *pidProfile) {
 
 FAST_CODE_NOINLINE float interpolatedSpApply(int axis, bool newRcFrame, ffInterpolationType_t type) {
 
-    if (newRcFrame) {
+    extern bool newRxFrame;
+    if (newRxFrame) {
         float rawSetpoint = getRawSetpoint(axis); 
         
         const float rxInterval = currentRxRefreshRate * 1e-6f;
