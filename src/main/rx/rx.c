@@ -420,7 +420,6 @@ bool rxUpdateCheck(timeUs_t currentTimeUs, timeDelta_t currentDeltaTime)
 {
     bool signalReceived = false;
     bool useDataDrivenProcessing = true;
-    newRxFrame = false;
     
 #if defined(USE_PWM) || defined(USE_PPM)
     if (featureIsEnabled(FEATURE_RX_PPM)) {

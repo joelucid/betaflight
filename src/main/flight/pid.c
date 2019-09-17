@@ -1553,6 +1553,8 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
     } else if (zeroThrottleItermReset) {
         pidResetIterm();
     }
+    extern bool newRxFrame;
+    newRxFrame = false;
 }
 
 bool crashRecoveryModeActive(void)
