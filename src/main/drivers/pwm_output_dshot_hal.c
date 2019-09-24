@@ -113,21 +113,24 @@ static void pwmDshotSetDirectionInput(
     if (!inputStampUs) {
         inputStampUs = micros();
     }
-
     LL_TIM_EnableARRPreload(timer); // Only update the period once all channels are done
     timer->ARR = 0xffffffff;
 
 #ifdef STM32H7
     IOConfigGPIO(motor->io, GPIO_MODE_OUTPUT_PP);
 #endif
+
     LL_TIM_IC_Init(timer, motor->llChannel, &motor->icInitStruct);
+
 #ifdef STM32H7
     IOConfigGPIOAF(motor->io, motor->iocfg, timerHardware->alternateFunction);
 #endif
+
     motor->dmaInitStruct.Direction = LL_DMA_DIRECTION_PERIPH_TO_MEMORY;
     xLL_EX_DMA_Init(motor->dmaRef, pDmaInit);
 }
 #endif
+
 
 FAST_CODE void pwmCompleteDshotMotorUpdate(void)
 {
