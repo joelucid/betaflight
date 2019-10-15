@@ -44,6 +44,11 @@
 #define MINIMAL_CLI
 #define USE_DSHOT
 #define USE_GYRO_DATA_ANALYSE
+#define USE_DSHOT_TELEMETRY
+#define USE_DSHOT_TELEMETRY_STATS
+#define USE_RPM_FILTER
+#define USE_DYN_IDLE
+#define USE_ITERM_RELAX
 #endif
 
 #ifdef STM32F4
@@ -170,7 +175,7 @@
 #define DMA_RW_AXI
 #endif
 
-#define USE_BRUSHED_ESC_AUTODETECT  // Detect if brushed motors are connected and set defaults appropriately to avoid motors spinning on boot
+//#define USE_BRUSHED_ESC_AUTODETECT  // Detect if brushed motors are connected and set defaults appropriately to avoid motors spinning on boot
 
 #define USE_MOTOR
 #define USE_PWM_OUTPUT
@@ -178,17 +183,17 @@
 #define USE_TIMER
 
 #define USE_CLI
-#define USE_SERIAL_PASSTHROUGH
+//#define USE_SERIAL_PASSTHROUGH
 #define USE_TASK_STATISTICS
-#define USE_GYRO_REGISTER_DUMP  // Adds gyroregisters command to cli to dump configured register values
+//#define USE_GYRO_REGISTER_DUMP  // Adds gyroregisters command to cli to dump configured register values
 #define USE_IMU_CALC
-#define USE_PPM
+//#define USE_PPM
 #define USE_SERIAL_RX
-#define USE_SERIALRX_CRSF       // Team Black Sheep Crossfire protocol
-#define USE_SERIALRX_IBUS       // FlySky and Turnigy receivers
+//#define USE_SERIALRX_CRSF       // Team Black Sheep Crossfire protocol
+//#define USE_SERIALRX_IBUS       // FlySky and Turnigy receivers
 #define USE_SERIALRX_SBUS       // Frsky and Futaba receivers
-#define USE_SERIALRX_SPEKTRUM   // SRXL, DSM2 and DSMX protocol
-#define USE_SERIALRX_SUMD       // Graupner Hott protocol
+//#define USE_SERIALRX_SPEKTRUM   // SRXL, DSM2 and DSMX protocol
+//#define USE_SERIALRX_SUMD       // Graupner Hott protocol
 
 #if (FLASH_SIZE > 128)
 #define PID_PROFILE_COUNT 3
@@ -199,30 +204,34 @@
 #endif
 
 #if (FLASH_SIZE > 64)
-#define USE_ACRO_TRAINER
+//#define USE_ACRO_TRAINER
+#define USE_INTERPOLATED_SP
+#define USE_ABSOLUTE_CONTROL
+#define USE_THROTTLE_BOOST
+
 #define USE_BLACKBOX
 #define USE_CLI_BATCH
 #define USE_RESOURCE_MGMT
 #define USE_RUNAWAY_TAKEOFF     // Runaway Takeoff Prevention (anti-taz)
-#define USE_SERVOS
+//#define USE_SERVOS
 #define USE_TELEMETRY
 #define USE_TELEMETRY_FRSKY_HUB
 #define USE_TELEMETRY_SMARTPORT
 #endif
 
 #if (FLASH_SIZE > 128)
-#define USE_GYRO_OVERFLOW_CHECK
-#define USE_YAW_SPIN_RECOVERY
-#define USE_DSHOT_DMAR
-#define USE_SERIALRX_FPORT      // FrSky FPort
-#define USE_TELEMETRY_CRSF
-#define USE_TELEMETRY_SRXL
+//#define USE_GYRO_OVERFLOW_CHECK
+//#define USE_YAW_SPIN_RECOVERY
+//#define USE_DSHOT_DMAR
+//#define USE_SERIALRX_FPORT      // FrSky FPort
+//#define USE_TELEMETRY_CRSF
+//#define USE_TELEMETRY_SRXL
 
 #if ((FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 12))
 #define USE_CMS
 #define USE_MSP_DISPLAYPORT
-#define USE_MSP_OVER_TELEMETRY
-#define USE_LED_STRIP
+//#define USE_MSP_OVER_TELEMETRY
+//#define USE_LED_STRIP
 #endif
 
 #if ((FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 11))
@@ -233,9 +242,9 @@
 #endif
 
 #if ((FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 10))
-#define USE_VIRTUAL_CURRENT_METER
+//#define USE_VIRTUAL_CURRENT_METER
 #define USE_CAMERA_CONTROL
-#define USE_ESC_SENSOR
+//#define USE_ESC_SENSOR
 #define USE_SERIAL_4WAY_BLHELI_BOOTLOADER
 #define USE_RCDEVICE
 #endif
@@ -245,31 +254,31 @@
 #endif
 
 #if ((FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 8))
-#define USE_LAUNCH_CONTROL
+//#define USE_LAUNCH_CONTROL
 #define USE_DYN_LPF
 #define USE_D_MIN
 #endif
 
 #if ((FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 7))
 #define USE_THROTTLE_BOOST
-#define USE_INTEGRATED_YAW_CONTROL
+//#define USE_INTEGRATED_YAW_CONTROL
 #endif
 
 #if ((FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 6))
 #define USE_ITERM_RELAX
 #define USE_RC_SMOOTHING_FILTER
-#define USE_THRUST_LINEARIZATION
+//#define USE_THRUST_LINEARIZATION
 #define USE_TPA_MODE
 #endif
 
 #if ((FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 5))
-#define USE_PWM
+//#define USE_PWM
 #endif
 
 #if ((FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 4))
 #define USE_HUFFMAN
-#define USE_PINIO
-#define USE_PINIOBOX
+//#define USE_PINIO
+//#define USE_PINIOBOX
 #endif
 
 #if ((FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 3))
@@ -287,20 +296,20 @@
 #endif
 
 #if ((FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 2))
-#define USE_TELEMETRY_HOTT
-#define USE_TELEMETRY_LTM
-#define USE_SERIALRX_SUMH       // Graupner legacy protocol
-#define USE_SERIALRX_XBUS       // JR
+//#define USE_TELEMETRY_HOTT
+//#define USE_TELEMETRY_LTM
+//#define USE_SERIALRX_SUMH       // Graupner legacy protocol
+//#define USE_SERIALRX_XBUS       // JR
 #endif
 
 #if ((FLASH_SIZE > 256) || (FEATURE_CUT_LEVEL < 1))
 #define USE_BOARD_INFO
-#define USE_EXTENDED_CMS_MENUS
+//#define USE_EXTENDED_CMS_MENUS
 #define USE_RTC_TIME
-#define USE_RX_MSP
-#define USE_ESC_SENSOR_INFO
-#define USE_CRSF_CMS_TELEMETRY
-#define USE_CRSF_LINK_STATISTICS
+//#define USE_RX_MSP
+//#define USE_ESC_SENSOR_INFO
+//#define USE_CRSF_CMS_TELEMETRY
+//#define USE_CRSF_LINK_STATISTICS
 #define USE_RX_RSSI_DBM
 #endif
 

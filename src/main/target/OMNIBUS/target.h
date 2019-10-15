@@ -49,9 +49,9 @@
 #define BARO_SPI_INSTANCE       SPI1
 #define BARO_CS_PIN             PA13
 
-#define USE_BARO
-#define USE_BARO_BMP280
-#define USE_BARO_SPI_BMP280
+//#define USE_BARO
+//#define USE_BARO_BMP280
+//#define USE_BARO_SPI_BMP280
 
 //#define USE_RANGEFINDER
 //#define USE_RANGEFINDER_HCSR04
@@ -84,7 +84,7 @@
 #define I2C1_SDA                NONE // PB7 (PWM7)
 #define I2C_DEVICE              (I2CDEV_1)
 
-#define USE_ESCSERIAL
+//#define USE_ESCSERIAL
 #define ESCSERIAL_TIMER_TX_PIN  PB4  // (HARDARE=0,PPM)
 
 #define USE_SPI
@@ -139,7 +139,7 @@
 //#define RSSI_ADC_PIN                PB1
 //#define ADC_INSTANCE                ADC3
 
-#define USE_TRANSPONDER
+// #define USE_TRANSPONDER
 #define REDUCE_TRANSPONDER_CURRENT_DRAW_WHEN_USB_CABLE_PRESENT
 
 #define ENABLE_BLACKBOX_LOGGING_ON_SDCARD_BY_DEFAULT
