@@ -49,6 +49,8 @@
 #define USE_RPM_FILTER
 #define USE_DYN_IDLE
 #define USE_ITERM_RELAX
+#define USE_RC_SMOOTHING_FILTER
+#define USE_TPA_MODE
 #endif
 
 #ifdef STM32F4
