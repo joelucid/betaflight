@@ -51,6 +51,7 @@
 #define USE_ITERM_RELAX
 #define USE_RC_SMOOTHING_FILTER
 #define USE_TPA_MODE
+#define USE_CCM_CODE
 #endif
 
 #ifdef STM32F4
@@ -142,6 +143,7 @@
 #define DEFAULT_AUX_CHANNEL_COUNT       6
 #endif
 
+
 #ifdef USE_ITCM_RAM
 #define FAST_CODE                   __attribute__((section(".tcm_code")))
 #define FAST_CODE_NOINLINE          NOINLINE
@@ -149,6 +151,12 @@
 #define FAST_CODE
 #define FAST_CODE_NOINLINE
 #endif // USE_ITCM_RAM
+
+#ifdef USE_CCM_CODE
+#define CCM_CODE              __attribute__((section(".ccm_code")))
+#else
+#define CCM_CODE
+#endif
 
 #ifdef USE_FAST_RAM
 #define FAST_RAM_ZERO_INIT             __attribute__ ((section(".fastram_bss"), aligned(4)))
