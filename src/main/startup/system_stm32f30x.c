@@ -327,10 +327,12 @@ void SetSysClock(void)
   if (HSEStatus == (uint32_t)0x01)
   {
     /* Enable Prefetch Buffer and set Flash Latency */
-    FLASH->ACR = FLASH_ACR_PRFTBE | (uint32_t)FLASH_ACR_LATENCY_1;
+//     FLASH->ACR = FLASH_ACR_PRFTBE | (uint32_t)FLASH_ACR_LATENCY_1;
+      FLASH->ACR = FLASH_ACR_PRFTBE | (uint32_t)(FLASH_ACR_LATENCY_1);
 
      /* HCLK = SYSCLK / 1 */
      RCC->CFGR |= (uint32_t)RCC_CFGR_HPRE_DIV1;
+//     RCC->CFGR |= (uint32_t)RCC_CFGR_HPRE_DIV2;
 
      /* PCLK2 = HCLK / 1 */
      RCC->CFGR |= (uint32_t)RCC_CFGR_PPRE2_DIV1;
@@ -345,7 +347,7 @@ void SetSysClock(void)
         RCC->CFGR |= (uint32_t)(RCC_CFGR_PLLSRC_PREDIV1 | RCC_CFGR_PLLXTPRE_PREDIV1 | RCC_CFGR_PLLMULL6);
     }
     else {
-        RCC->CFGR |= (uint32_t)(RCC_CFGR_PLLSRC_PREDIV1 | RCC_CFGR_PLLXTPRE_PREDIV1 | RCC_CFGR_PLLMULL9);
+        RCC->CFGR |= (uint32_t)(RCC_CFGR_PLLSRC_PREDIV1 | RCC_CFGR_PLLXTPRE_PREDIV1 | RCC_CFGR_PLLMULL15);
     }
 
     /* Enable PLL */
@@ -364,6 +366,10 @@ void SetSysClock(void)
     while ((RCC->CFGR & (uint32_t)RCC_CFGR_SWS) != (uint32_t)RCC_CFGR_SWS_PLL)
     {
     }
+
+    RCC->CFGR2 &= (uint32_t)0xFFFFFFF0;
+  
+    SystemCoreClockUpdate();
   }
   else
   { /* If HSE fails to start-up, the application will have wrong clock
