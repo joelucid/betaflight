@@ -50,9 +50,14 @@ PG_DECLARE(statusLedConfig_t, statusLedConfig);
 
 #else
 
+/* #define LED0_TOGGLE              NOOP */
+/* #define LED0_OFF                 NOOP */
+/* #define LED0_ON                  NOOP */
+
 #define LED0_TOGGLE              ledToggle(0)
 #define LED0_OFF                 ledSet(0, false)
 #define LED0_ON                  ledSet(0, true)
+
 
 #define LED1_TOGGLE              ledToggle(1)
 #define LED1_OFF                 ledSet(1, false)

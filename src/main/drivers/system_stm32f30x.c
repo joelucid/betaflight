@@ -35,7 +35,7 @@
 #define DEFAULT_STACK_POINTER ((uint32_t *)0x1FFFD800)
 #define SYSTEM_MEMORY_RESET_VECTOR ((uint32_t *) 0x1FFFD804)
 
-void SetSysClock();
+void SetSysClock(void);
 
 void systemReset(void)
 {

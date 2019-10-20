@@ -102,6 +102,7 @@
 #include "platform.h"
 
 #include "stm32f30x.h"
+#include "drivers/persistent.h"
 #include "drivers/system.h"
 
 uint32_t hse_value = HSE_VALUE;
@@ -288,6 +289,18 @@ void SystemCoreClockUpdate (void)
   SystemCoreClock >>= tmp;
 }
 
+
+void OverclockRebootIfNecessary(uint32_t level) 
+{
+    if (level && (RCC->CFGR & (0xf << 18)) != RCC_CFGR_PLLMULL15) {
+        persistentObjectWrite(PERSISTENT_OBJECT_OVERCLOCK_LEVEL, level);
+        __disable_irq();
+        NVIC_SystemReset();
+    }
+}
+
+
+
 /**
   * @brief  Configures the System clock source, PLL Multiplier and Divider factors,
   *               AHB/APBx prescalers and Flash settings
@@ -304,6 +317,12 @@ void SetSysClock(void)
 /*            PLL (clocked by HSE) used as System clock source                */
 /******************************************************************************/
 
+  uint32_t overClock = persistentObjectRead(PERSISTENT_OBJECT_OVERCLOCK_LEVEL);
+  if (overClock == 2) {
+      persistentObjectWrite(PERSISTENT_OBJECT_OVERCLOCK_LEVEL,0);
+  }
+      
+  
   /* SYSCLK, HCLK, PCLK2 and PCLK1 configuration -----------*/
   /* Enable HSE */
   RCC->CR |= ((uint32_t)RCC_CR_HSEON);
@@ -327,12 +346,10 @@ void SetSysClock(void)
   if (HSEStatus == (uint32_t)0x01)
   {
     /* Enable Prefetch Buffer and set Flash Latency */
-//     FLASH->ACR = FLASH_ACR_PRFTBE | (uint32_t)FLASH_ACR_LATENCY_1;
       FLASH->ACR = FLASH_ACR_PRFTBE | (uint32_t)(FLASH_ACR_LATENCY_1);
 
      /* HCLK = SYSCLK / 1 */
      RCC->CFGR |= (uint32_t)RCC_CFGR_HPRE_DIV1;
-//     RCC->CFGR |= (uint32_t)RCC_CFGR_HPRE_DIV2;
 
      /* PCLK2 = HCLK / 1 */
      RCC->CFGR |= (uint32_t)RCC_CFGR_PPRE2_DIV1;
@@ -347,7 +364,11 @@ void SetSysClock(void)
         RCC->CFGR |= (uint32_t)(RCC_CFGR_PLLSRC_PREDIV1 | RCC_CFGR_PLLXTPRE_PREDIV1 | RCC_CFGR_PLLMULL6);
     }
     else {
-        RCC->CFGR |= (uint32_t)(RCC_CFGR_PLLSRC_PREDIV1 | RCC_CFGR_PLLXTPRE_PREDIV1 | RCC_CFGR_PLLMULL15);
+        if (overClock) {
+            RCC->CFGR |= (uint32_t)(RCC_CFGR_PLLSRC_PREDIV1 | RCC_CFGR_PLLXTPRE_PREDIV1 | RCC_CFGR_PLLMULL15);
+        } else { 
+            RCC->CFGR |= (uint32_t)(RCC_CFGR_PLLSRC_PREDIV1 | RCC_CFGR_PLLXTPRE_PREDIV1 | RCC_CFGR_PLLMULL9);
+        }
     }
 
     /* Enable PLL */

@@ -52,6 +52,7 @@
 #define USE_RC_SMOOTHING_FILTER
 #define USE_TPA_MODE
 #define USE_CCM_CODE
+#define USE_OVERCLOCK
 #endif
 
 #ifdef STM32F4

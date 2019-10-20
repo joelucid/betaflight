@@ -67,6 +67,7 @@
 #include "drivers/serial.h"
 #include "drivers/serial_softserial.h"
 #include "drivers/serial_uart.h"
+#include "drivers/serial_usb_vcp.h"
 #include "drivers/sdcard.h"
 #include "drivers/sdio.h"
 #include "drivers/sound_beeper.h"
@@ -486,9 +487,25 @@ void init(void)
 #endif
 
 #ifdef USE_OVERCLOCK
+    void OverclockRebootIfNecessary(uint32_t level) ;
+    
+#if defined(STM32F3) && defined(USE_VCP)
+    if (systemConfig()->cpu_overclock == 2) {
+        usbVcpOpen();
+        delayMicroseconds(1000000);
+        bool usbConnected = usbVcpIsConnected() != 0;
+    
+        /* void indicate(uint8_t count, uint16_t duration); */
+        /* indicate((RCC->CFGR & (0xf << 18)) >> 18, 500); */
+        if (!usbConnected) {
+            OverclockRebootIfNecessary(systemConfig()->cpu_overclock);
+        }
+    } else 
+#endif    
     OverclockRebootIfNecessary(systemConfig()->cpu_overclock);
 #endif
 
+    
     // Configure MCO output after config is stable
 #ifdef USE_MCO
     mcoInit(mcoConfig());
