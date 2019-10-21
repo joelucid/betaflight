@@ -67,14 +67,15 @@ typedef enum {
     SPI_CLOCK_STANDARD      = 8,  //12.00000 MHz
     SPI_CLOCK_FAST          = 4,   //25.00000 MHz
     SPI_CLOCK_ULTRAFAST     = 2    //50.00000 MHz
+#elif defined(STM32F3) && defined(USE_VCP)
+    SPI_CLOCK_SLOW          = 128, //00.56250 MHz * 1.6
+    SPI_CLOCK_STANDARD      = 8,   //04.50000 MHz * 1.6
+    SPI_CLOCK_FAST          = 4,   //9.00000 MHz * 1.6
+    SPI_CLOCK_ULTRAFAST     = 2    //18.00000 MHz & 1.6
 #else
-    /* SPI_CLOCK_SLOW          = 128, //00.56250 MHz */
-    /* SPI_CLOCK_STANDARD      = 4,   //09.00000 MHz */
-    /* SPI_CLOCK_FAST          = 2,   //18.00000 MHz */
-    /* SPI_CLOCK_ULTRAFAST     = 2    //18.00000 MHz */
     SPI_CLOCK_SLOW          = 128, //00.56250 MHz
-    SPI_CLOCK_STANDARD      = 8,   //09.00000 MHz
-    SPI_CLOCK_FAST          = 4,   //18.00000 MHz
+    SPI_CLOCK_STANDARD      = 4,   //09.00000 MHz
+    SPI_CLOCK_FAST          = 2,   //18.00000 MHz
     SPI_CLOCK_ULTRAFAST     = 2    //18.00000 MHz
 #endif
 } SPIClockDivider_e;

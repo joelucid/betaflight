@@ -292,7 +292,8 @@ void SystemCoreClockUpdate (void)
 
 void OverclockRebootIfNecessary(uint32_t level) 
 {
-    if (level && (RCC->CFGR & (0xf << 18)) != RCC_CFGR_PLLMULL15) {
+    if (level && (RCC->CFGR & (0xf << 18)) != RCC_CFGR_PLLMULL15 ||
+        !level && (RCC->CFGR & (0xf << 18)) != RCC_CFGR_PLLMULL9) {
         persistentObjectWrite(PERSISTENT_OBJECT_OVERCLOCK_LEVEL, level);
         __disable_irq();
         NVIC_SystemReset();
@@ -318,7 +319,8 @@ void SetSysClock(void)
 /******************************************************************************/
 
   uint32_t overClock = persistentObjectRead(PERSISTENT_OBJECT_OVERCLOCK_LEVEL);
-  if (overClock == 2) {
+  // Reset overclock so USB device can be attached at next boot
+  if (overClock == OVERCLOCK_120MHZ_VCP) {
       persistentObjectWrite(PERSISTENT_OBJECT_OVERCLOCK_LEVEL,0);
   }
       
