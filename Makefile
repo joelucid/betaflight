@@ -638,6 +638,12 @@ targets-by-mcu:
 						echo "Building target $${target} failed, aborting."; \
 						exit 1; \
 					fi; \
+					echo "Building target $${target} CRSF..."; \
+					$(MAKE) TARGET=$${target} OPTIONS=USE_CRSF EXT="_CRSF"; \
+					if [ $$? -ne 0 ]; then \
+						echo "Building target $${target} failed, aborting."; \
+						exit 1; \
+					fi; \
 				else \
 					echo -n "$${target} "; \
 				fi; \

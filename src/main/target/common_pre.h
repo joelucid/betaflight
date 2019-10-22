@@ -58,7 +58,7 @@
 #define USE_THROTTLE_BOOST
 //#define USE_VTX_TABLE
 
-#if !defined(USE_FRSKY) && !defined(USE_FLYSKY) && !defined(USE_SPEKTRUM)
+#if !defined(USE_FRSKY) && !defined(USE_FLYSKY) && !defined(USE_SPEKTRUM) && !defined(USE_CRSF)
 #define USE_FRSKY
 #endif
 
@@ -79,6 +79,12 @@
 #define USE_TELEMETRY_IBUS
 #define USE_TELEMETRY_IBUS_EXTENDED
 #endif
+
+#ifdef USE_CRSF
+#define USE_SERIALRX_CRSF       // Team Black Sheep Crossfire protocol
+#define USE_TELEMETRY_CRSF
+#endif
+
 #endif
 
 #ifdef STM32F4
