@@ -24,7 +24,6 @@
 #include "platform.h"
 
 #if defined(USE_VTX_RTC6705_SOFTSPI)
-
 #include "drivers/bus_spi.h"
 #include "drivers/io.h"
 #include "drivers/light_led.h"

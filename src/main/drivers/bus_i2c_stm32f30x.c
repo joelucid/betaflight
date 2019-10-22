@@ -41,6 +41,8 @@
 
 #define I2C_HIGHSPEED_TIMING  0x00500E30  // 1000 Khz, 72Mhz Clock, Analog Filter Delay ON, Setup 40, Hold 4.
 #define I2C_STANDARD_TIMING   0x00E0257A  // 400 Khz, 72Mhz Clock, Analog Filter Delay ON, Rise 100, Fall 10.
+//#define I2C_HIGHSPEED_TIMING 0x00a0167c  // 1000 khz when overclocked to 120mhz
+//#define I2C_HIGHSPEED_TIMING I2C_STANDARD_TIMING
 
 #define I2C_GPIO_AF         GPIO_AF_4
 

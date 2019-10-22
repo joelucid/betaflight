@@ -40,6 +40,7 @@
 #include "fc/rc_controls.h"
 
 #include "flight/pid.h"
+#include "flight/mixer.h"
 
 #include "pg/vcd.h"
 #include "pg/rx.h"
@@ -68,11 +69,13 @@
 
 void targetConfiguration(void)
 {
+#ifdef USE_BRUSHED_ESC_AUTODETECT
     if (getDetectedMotorType() == MOTOR_BRUSHED) {
         motorConfigMutable()->dev.motorPwmRate = BRUSHED_MOTORS_PWM_RATE;
         motorConfigMutable()->minthrottle = 1030;
         pidConfigMutable()->pid_process_denom = 1;
     }
+#endif
 
     for (uint8_t pidProfileIndex = 0; pidProfileIndex < PID_PROFILE_COUNT; pidProfileIndex++) {
         pidProfile_t *pidProfile = pidProfilesMutable(pidProfileIndex);

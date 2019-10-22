@@ -291,19 +291,21 @@ CPPCHECK        = cppcheck $(CSOURCES) --enable=all --platform=unix64 \
                   $(addprefix -I,$(INCLUDE_DIRS)) \
                   -I/usr/include -I/usr/include/linux
 
+#EXT ?= ""
+
 #
 # Things we will build
 #
-TARGET_S19      = $(BIN_DIR)/$(FORKNAME)_$(FC_VER)_$(TARGET).s19
-TARGET_BIN      = $(BIN_DIR)/$(FORKNAME)_$(FC_VER)_$(TARGET).bin
-TARGET_HEX      = $(BIN_DIR)/$(FORKNAME)_$(FC_VER)_$(TARGET).hex
-TARGET_ELF      = $(OBJECT_DIR)/$(FORKNAME)_$(TARGET).elf
-TARGET_EXST_ELF = $(OBJECT_DIR)/$(FORKNAME)_$(TARGET)_EXST.elf
-TARGET_UNPATCHED_BIN = $(OBJECT_DIR)/$(FORKNAME)_$(TARGET)_UNPATCHED.bin
-TARGET_LST      = $(OBJECT_DIR)/$(FORKNAME)_$(TARGET).lst
-TARGET_OBJS     = $(addsuffix .o,$(addprefix $(OBJECT_DIR)/$(TARGET)/,$(basename $(SRC))))
-TARGET_DEPS     = $(addsuffix .d,$(addprefix $(OBJECT_DIR)/$(TARGET)/,$(basename $(SRC))))
-TARGET_MAP      = $(OBJECT_DIR)/$(FORKNAME)_$(TARGET).map
+TARGET_S19      = $(BIN_DIR)/$(FORKNAME)_$(FC_VER)_$(TARGET)$(EXT).s19
+TARGET_BIN      = $(BIN_DIR)/$(FORKNAME)_$(FC_VER)_$(TARGET)$(EXT).bin
+TARGET_HEX      = $(BIN_DIR)/$(FORKNAME)_$(FC_VER)_$(TARGET)$(EXT).hex
+TARGET_ELF      = $(OBJECT_DIR)/$(FORKNAME)$(EXT)_$(TARGET)$(EXT).elf
+TARGET_EXST_ELF = $(OBJECT_DIR)/$(FORKNAME)$(EXT)_$(TARGET)_EXST$(EXT).elf
+TARGET_UNPATCHED_BIN = $(OBJECT_DIR)/$(FORKNAME)_$(TARGET)$(EXT)_UNPATCHED.bin
+TARGET_LST      = $(OBJECT_DIR)/$(FORKNAME)_$(TARGET)$(EXT).lst
+TARGET_OBJS     = $(addsuffix .o,$(addprefix $(OBJECT_DIR)/$(TARGET)$(EXT)/,$(basename $(SRC))))
+TARGET_DEPS     = $(addsuffix .d,$(addprefix $(OBJECT_DIR)/$(TARGET)$(EXT)/,$(basename $(SRC))))
+TARGET_MAP      = $(OBJECT_DIR)/$(FORKNAME)_$(TARGET)$(EXT).map
 
 TARGET_EXST_HASH_SECTION_FILE = $(OBJECT_DIR)/$(TARGET)/exst_hash_section.bin
 
@@ -393,7 +395,7 @@ define compile_file
 endef
 
 ifeq ($(DEBUG),GDB)
-$(OBJECT_DIR)/$(TARGET)/%.o: %.c
+$(OBJECT_DIR)/$(TARGET)$(EXT)/%.o: %.c
 	$(V1) mkdir -p $(dir $@)
 	$(V1) $(if $(findstring $<,$(NOT_OPTIMISED_SRC)), \
 		$(call compile_file,not optimised, $(CC_NO_OPTIMISATION)) \
@@ -401,7 +403,7 @@ $(OBJECT_DIR)/$(TARGET)/%.o: %.c
 		$(call compile_file,debug,$(CC_DEBUG_OPTIMISATION)) \
 	)
 else
-$(OBJECT_DIR)/$(TARGET)/%.o: %.c
+$(OBJECT_DIR)/$(TARGET)$(EXT)/%.o: %.c
 	$(V1) mkdir -p $(dir $@)
 	$(V1) $(if $(findstring $<,$(NOT_OPTIMISED_SRC)), \
 		$(call compile_file,not optimised,$(CC_NO_OPTIMISATION)) \
@@ -419,12 +421,12 @@ $(OBJECT_DIR)/$(TARGET)/%.o: %.c
 endif
 
 # Assemble
-$(OBJECT_DIR)/$(TARGET)/%.o: %.s
+$(OBJECT_DIR)/$(TARGET)$(EXT)/%.o: %.s
 	$(V1) mkdir -p $(dir $@)
 	@echo "%% $(notdir $<)" "$(STDOUT)"
 	$(V1) $(CROSS_CC) -c -o $@ $(ASFLAGS) $<
 
-$(OBJECT_DIR)/$(TARGET)/%.o: %.S
+$(OBJECT_DIR)/$(TARGET)$(EXT)/%.o: %.S
 	$(V1) mkdir -p $(dir $@)
 	@echo "%% $(notdir $<)" "$(STDOUT)"
 	$(V1) $(CROSS_CC) -c -o $@ $(ASFLAGS) $<
@@ -611,19 +613,43 @@ targets-by-mcu:
 		if [ "$${TARGET_MCU_TYPE}" = "$${MCU_TYPE}" ]; then \
 			if [ "$${DO_BUILD}" = 1 ]; then \
 				echo "Building target $${target}..."; \
-				$(MAKE) TARGET=$${target}; \
+				$(MAKE) TARGET=$${target} ; \
 				if [ $$? -ne 0 ]; then \
 					echo "Building target $${target} failed, aborting."; \
 					exit 1; \
 				fi; \
 			else \
-				echo -n "$${target} "; \
+				if [ "$${DO_BUILD}" = 2 ]; then \
+					echo "Building target $${target} FRSKY..."; \
+					$(MAKE) TARGET=$${target} OPTIONS=USE_FRSKY EXT="_FRSKY"; \
+					if [ $$? -ne 0 ]; then \
+						echo "Building target $${target} failed, aborting."; \
+						exit 1; \
+					fi; \
+					echo "Building target $${target} FLYSKY..."; \
+					$(MAKE) TARGET=$${target} OPTIONS=USE_FLYSKY EXT="_FLYSKY"; \
+					if [ $$? -ne 0 ]; then \
+						echo "Building target $${target} failed, aborting."; \
+						exit 1; \
+					fi; \
+					echo "Building target $${target} SPEKTRUM..."; \
+					$(MAKE) TARGET=$${target} OPTIONS=USE_SPEKTRUM EXT="_SPEKTRUM"; \
+					if [ $$? -ne 0 ]; then \
+						echo "Building target $${target} failed, aborting."; \
+						exit 1; \
+					fi; \
+				else \
+					echo -n "$${target} "; \
+				fi; \
 			fi; \
 		fi; \
 	done
 	@echo
 
 ## targets-f3        : make all F3 targets
+targets-f3-rx:
+	$(V1) $(MAKE) -s targets-by-mcu MCU_TYPE=STM32F3 DO_BUILD=2
+
 targets-f3:
 	$(V1) $(MAKE) -s targets-by-mcu MCU_TYPE=STM32F3 DO_BUILD=1
 

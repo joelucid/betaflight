@@ -54,6 +54,7 @@
 
 void targetConfiguration(void)
 {
+#ifdef USE_BRUSHED_ESC_AUTODETECT
     if (getDetectedMotorType() == MOTOR_BRUSHED) {
         motorConfigMutable()->dev.motorPwmRate = BRUSHED_MOTORS_PWM_RATE;
         motorConfigMutable()->minthrottle = 1049;
@@ -96,5 +97,6 @@ void targetConfiguration(void)
             controlRateConfig->rates[PID_YAW] = 80;
         }
     }
+#endif
 }
 #endif

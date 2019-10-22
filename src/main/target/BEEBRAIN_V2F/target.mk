@@ -12,4 +12,5 @@ TARGET_SRC = \
 
 ifneq ($(TARGET), BEESTORM)
 TARGET_SRC += drivers/vtx_rtc6705_soft_spi.c
+TARGET_SRC += drivers/vtx_rtc6705.c
 endif

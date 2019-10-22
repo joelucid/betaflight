@@ -34,6 +34,7 @@
 #include "drivers/sound_beeper.h"
 
 #include "flight/pid.h"
+#include "flight/mixer.h"
 
 #include "pg/beeper_dev.h"
 #include "pg/gyrodev.h"
@@ -110,11 +111,13 @@ void targetConfiguration(void)
         parseRcChannels("AETR1234", rxConfigMutable());
     }
 
+#ifdef USE_BRUSHED_ESC_AUTODETECT
     if (getDetectedMotorType() == MOTOR_BRUSHED) {
         motorConfigMutable()->dev.motorPwmRate = BRUSHED_MOTORS_PWM_RATE;
         pidConfigMutable()->pid_process_denom = 1;
     }
-
+#endif
+    
     for (uint8_t pidProfileIndex = 0; pidProfileIndex < PID_PROFILE_COUNT; pidProfileIndex++) {
         pidProfile_t *pidProfile = pidProfilesMutable(pidProfileIndex);
 

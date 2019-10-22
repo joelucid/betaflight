@@ -66,9 +66,9 @@ void pgResetFn_sdcardConfig(sdcardConfig_t *config)
 #ifndef USE_DMA_SPEC
 #ifdef USE_SDCARD_SPI
 #if defined(SDCARD_DMA_STREAM_TX_FULL)
-    config->dmaIdentifier = (uint8_t)dmaGetIdentifier(SDCARD_DMA_STREAM_TX_FULL);
+    config->dmaIdentifier = (uint8_t)dmaGetIdentifier((dmaResource_t*)SDCARD_DMA_STREAM_TX_FULL);
 #elif defined(SDCARD_DMA_CHANNEL_TX)
-    config->dmaIdentifier = (uint8_t)dmaGetIdentifier(SDCARD_DMA_CHANNEL_TX);
+    config->dmaIdentifier = (uint8_t)dmaGetIdentifier((dmaResource_t*)SDCARD_DMA_CHANNEL_TX);
 #endif
 #endif
 #endif // !USE_DMA_SPEC

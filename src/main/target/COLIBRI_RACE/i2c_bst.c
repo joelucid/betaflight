@@ -379,7 +379,7 @@ static bool bstSlaveProcessFeedbackCommand(uint8_t bstRequest)
             break;
 
         case BST_FEATURE:
-            bstWrite32(featureMask());
+            bstWrite32(featureConfig()->enabledFeatures);
             break;
 
         case BST_RX_CONFIG:

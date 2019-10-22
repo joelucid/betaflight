@@ -24,6 +24,9 @@
 
 #define TARGET_BOARD_IDENTIFIER "BFF3"
 
+#undef USE_DSHOT_TELEMETRY
+
+#define USE_DSHOT_DMAR
 #define USE_BEEPER
 #define BEEPER_PIN              PC15
 #define BEEPER_INVERTED

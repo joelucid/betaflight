@@ -28,6 +28,12 @@
 #define USE_VTX_RTC6705
 #endif
 
+#ifdef STM32F3
+#undef USE_ESCSERIAL
+#undef USE_BARO
+#undef USE_RANGEFINDER
+#endif
+
 #ifndef USE_DSHOT
 #undef USE_ESC_SENSOR
 #endif

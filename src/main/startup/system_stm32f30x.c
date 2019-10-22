@@ -289,18 +289,32 @@ void SystemCoreClockUpdate (void)
   SystemCoreClock >>= tmp;
 }
 
+#ifdef USE_OVERCLOCK
+
+const uint32_t ocPllMul[] = {
+    RCC_CFGR_PLLMULL9,
+    RCC_CFGR_PLLMULL10,
+    RCC_CFGR_PLLMULL11,
+    RCC_CFGR_PLLMULL12,
+    RCC_CFGR_PLLMULL13,
+    RCC_CFGR_PLLMULL14,
+    RCC_CFGR_PLLMULL15,
+    RCC_CFGR_PLLMULL16 };
+
 
 void OverclockRebootIfNecessary(uint32_t level) 
 {
-    if (level && (RCC->CFGR & (0xf << 18)) != RCC_CFGR_PLLMULL15 ||
-        !level && (RCC->CFGR & (0xf << 18)) != RCC_CFGR_PLLMULL9) {
+    uint32_t overClock = level;
+    bool vcp = level >= 8;
+    if (vcp) overClock -= 7;
+    if ((RCC->CFGR & (0xf << 18)) != ocPllMul[overClock]) {
         persistentObjectWrite(PERSISTENT_OBJECT_OVERCLOCK_LEVEL, level);
         __disable_irq();
         NVIC_SystemReset();
     }
 }
 
-
+#endif
 
 /**
   * @brief  Configures the System clock source, PLL Multiplier and Divider factors,
@@ -319,8 +333,11 @@ void SetSysClock(void)
 /******************************************************************************/
 
   uint32_t overClock = persistentObjectRead(PERSISTENT_OBJECT_OVERCLOCK_LEVEL);
+  bool vcp = overClock > OVERCLOCK_128MHZ;
+  if (vcp) overClock -= OVERCLOCK_128MHZ;
+  
   // Reset overclock so USB device can be attached at next boot
-  if (overClock == OVERCLOCK_120MHZ_VCP) {
+  if (vcp) {
       persistentObjectWrite(PERSISTENT_OBJECT_OVERCLOCK_LEVEL,0);
   }
       
@@ -366,11 +383,11 @@ void SetSysClock(void)
         RCC->CFGR |= (uint32_t)(RCC_CFGR_PLLSRC_PREDIV1 | RCC_CFGR_PLLXTPRE_PREDIV1 | RCC_CFGR_PLLMULL6);
     }
     else {
-        if (overClock) {
-            RCC->CFGR |= (uint32_t)(RCC_CFGR_PLLSRC_PREDIV1 | RCC_CFGR_PLLXTPRE_PREDIV1 | RCC_CFGR_PLLMULL15);
-        } else { 
-            RCC->CFGR |= (uint32_t)(RCC_CFGR_PLLSRC_PREDIV1 | RCC_CFGR_PLLXTPRE_PREDIV1 | RCC_CFGR_PLLMULL9);
-        }
+#ifdef USE_OVERCLOCK
+        RCC->CFGR |= (uint32_t)(RCC_CFGR_PLLSRC_PREDIV1 | RCC_CFGR_PLLXTPRE_PREDIV1 | ocPllMul[overClock]);
+#else
+        RCC->CFGR |= (uint32_t)(RCC_CFGR_PLLSRC_PREDIV1 | RCC_CFGR_PLLXTPRE_PREDIV1 | RCC_CFGR_PLLMULL9);
+#endif        
     }
 
     /* Enable PLL */
