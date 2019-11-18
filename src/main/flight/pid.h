@@ -50,6 +50,8 @@
 
 // Anti gravity I constant
 #define AG_KI 21.586988f;
+#define CRASH_RELAX_SETPOINT_THRESHOLD 100.0f
+#define CRASH_RELAX_CUTOFF_DEFAULT 10
 
 #define ITERM_ACCELERATOR_GAIN_OFF 1000
 #define ITERM_ACCELERATOR_GAIN_MAX 30000
@@ -146,6 +148,7 @@ typedef struct pidProfile_s {
     uint16_t itermLimit;
     uint16_t dterm_lowpass2_hz;             // Extra PT1 Filter on D in hz
     uint8_t crash_recovery;                 // off, on, on and beeps when it is in crash recovery mode
+    uint8_t crash_relax;                    // cutoff of high pass to attenuate error signals
     uint8_t throttle_boost;                 // how much should throttle be boosted during transient changes 0-100, 100 adds 10x hpf filtered throttle
     uint8_t throttle_boost_cutoff;          // Which cutoff frequency to use for throttle boost. higher cutoffs keep the boost on for shorter. Specified in hz.
     uint8_t iterm_rotation;                 // rotates iterm to translate world errors to local coordinate system

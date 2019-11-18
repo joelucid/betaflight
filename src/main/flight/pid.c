@@ -173,6 +173,7 @@ void resetPidProfile(pidProfile_t *pidProfile)
         .crash_gthreshold = 400,    // degrees/second
         .crash_setpoint_threshold = 350, // degrees/second
         .crash_recovery = PID_CRASH_RECOVERY_OFF, // off by default
+        .crash_relax = CRASH_RELAX_CUTOFF_DEFAULT,
         .horizon_tilt_effect = 75,
         .horizon_tilt_expert_mode = false,
         .crash_limit_yaw = 200,
@@ -328,6 +329,10 @@ static FAST_RAM_ZERO_INIT pt1Filter_t antiGravityThrottleLpf;
 static FAST_RAM_ZERO_INIT float ffBoostFactor;
 static FAST_RAM_ZERO_INIT float ffSmoothFactor;
 static FAST_RAM_ZERO_INIT float ffSpikeLimitInverse;
+static FAST_RAM_ZERO_INIT pt1Filter_t crashRelaxPt1[XYZ_AXIS_COUNT + 1];
+static FAST_RAM_ZERO_INIT float crashRelaxSetpointThreshold;
+static FAST_RAM_ZERO_INIT float crashRelaxHpf;
+
 
 float pidGetSpikeLimitInverse()
 {
@@ -485,6 +490,9 @@ void pidInitFilters(const pidProfile_t *pidProfile)
 
     ffBoostFactor = (float)pidProfile->ff_boost / 10.0f;
     ffSpikeLimitInverse = pidProfile->ff_spike_limit ? 1.0f / ((float)pidProfile->ff_spike_limit / 10.0f) : 0.0f;
+    for (int axis = 0; axis < 4; axis++) {
+        pt1FilterInit(&crashRelaxPt1[axis], pt1FilterGain((float)pidProfile->crash_relax, dT));
+    }
 }
 
 #ifdef USE_RC_SMOOTHING_FILTER
@@ -595,6 +603,7 @@ void pidUpdateAntiGravityThrottleFilter(float throttle)
     if (antiGravityMode == ANTI_GRAVITY_SMOOTH) {
         antiGravityThrottleHpf = throttle - pt1FilterApply(&antiGravityThrottleLpf, throttle);
     }
+    crashRelaxHpf = throttle - pt1FilterApply(&crashRelaxPt1[3], throttle);
 }
 
 #ifdef USE_DYN_LPF
@@ -678,6 +687,8 @@ void pidInitConfig(const pidProfile_t *pidProfile)
     itermRelaxType = pidProfile->iterm_relax_type;
     itermRelaxCutoff = pidProfile->iterm_relax_cutoff;
 #endif
+
+    crashRelaxSetpointThreshold = CRASH_RELAX_SETPOINT_THRESHOLD;
 
 #ifdef USE_ACRO_TRAINER
     acroTrainerAngleLimit = pidProfile->acro_trainer_angle_limit;
@@ -945,9 +956,44 @@ static void detectAndSetCrashRecovery(
     // no point in trying to recover if the crash is so severe that the gyro overflows
     if ((crash_recovery || FLIGHT_MODE(GPS_RESCUE_MODE)) && !gyroOverflowDetected()) {
         if (ARMING_FLAG(ARMED)) {
-            if (getMotorMixRange() >= 1.0f && !inCrashRecoveryMode
-                && fabsf(delta) > crashDtermThreshold
-                && fabsf(errorRate) > crashGyroThreshold
+            static bool inited = false;
+            static float setpointHpfSum;
+            static pt1Filter_t setpointHpfSumLpf;
+            if (!inited) {
+                inited = true;
+                pt1FilterInit(&setpointHpfSumLpf, pt1FilterGain(5, dT));
+            }
+            if (axis == 0) {
+                setpointHpfSum = 0;
+                float setpointSum = 0;
+                for (int i = 0; i < 3; i++) {
+                    float sp = getSetpointRate(i);
+                    setpointHpfSum += fabsf(sp - pt1FilterApply(&crashRelaxPt1[i], sp));
+                    setpointSum += fabsf(sp);
+                }
+                setpointHpfSum += fabsf(crashRelaxHpf) * 1000.0f;
+                setpointHpfSum += setpointSum / 5.0f;
+                
+                pt1FilterApply(&setpointHpfSumLpf, setpointHpfSum);
+                if (setpointHpfSum > setpointHpfSumLpf.state) {
+                    setpointHpfSumLpf.state = setpointHpfSum;
+                }
+            }
+            float spSignal = setpointHpfSumLpf.state;
+            
+            float crashRelaxFactor = MAX(0, 1 - spSignal / crashRelaxSetpointThreshold);
+            if (axis == 0) {
+                DEBUG_SET(DEBUG_CRASH_PROTECT, 0, fabsf(delta) * 0.01f);
+                DEBUG_SET(DEBUG_CRASH_PROTECT, 1, fabsf(errorRate) * 10.0f);
+                DEBUG_SET(DEBUG_CRASH_PROTECT, 2, crashRelaxFactor * 100.0f);
+            }
+                
+            if (axis == FD_YAW && fabsf(pidData[axis].I) == itermLimit) {
+                crashRelaxFactor = 0.0f;
+            }
+            if (!inCrashRecoveryMode
+                && (crashRelaxFactor * fabsf(delta) * 0.01f > crashDtermThreshold
+                    || crashRelaxFactor * fabsf(errorRate) > crashGyroThreshold)
                 && fabsf(getSetpointRate(axis)) < crashSetpointThreshold) {
                 if (crash_recovery == PID_CRASH_RECOVERY_DISARM) {
                     setArmingDisabled(ARMING_DISABLED_CRASH_DETECTED);
@@ -1329,15 +1375,6 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
     gpsRescuePreviousState = gpsRescueIsActive;
 #endif
 
-    // Dynamic i component,
-    if ((antiGravityMode == ANTI_GRAVITY_SMOOTH) && antiGravityEnabled) {
-        itermAccelerator = fabsf(antiGravityThrottleHpf) * 0.01f * (itermAcceleratorGain - 1000);
-        DEBUG_SET(DEBUG_ANTI_GRAVITY, 1, lrintf(antiGravityThrottleHpf * 1000));
-    }
-    DEBUG_SET(DEBUG_ANTI_GRAVITY, 0, lrintf(itermAccelerator * 1000));
-
-    float agGain = dT * itermAccelerator * AG_KI;
-
     // gradually scale back integration when above windup point
     float dynCi = dT;
     if (itermWindupPointInv > 1.0f) {
@@ -1371,6 +1408,14 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
 
     // ----------PID controller----------
     for (int axis = FD_ROLL; axis <= FD_YAW; ++axis) {
+
+        // Dynamic i component,
+        if ((antiGravityMode == ANTI_GRAVITY_SMOOTH) && antiGravityEnabled && axis != FD_YAW) {
+            itermAccelerator = 1 + fabsf(antiGravityThrottleHpf) * 0.01f * (itermAcceleratorGain - 1000);
+            DEBUG_SET(DEBUG_ANTI_GRAVITY, 1, lrintf(antiGravityThrottleHpf * 1000));
+        }
+        DEBUG_SET(DEBUG_ANTI_GRAVITY, 0, lrintf(itermAccelerator * 1000));
+        
 
         float currentPidSetpoint = getSetpointRate(axis);
         if (maxVelocity[axis]) {
@@ -1491,23 +1536,25 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
         pidSetpointDelta = applyRcSmoothingDerivativeFilter(axis, pidSetpointDelta);
 #endif // USE_RC_SMOOTHING_FILTER
 
+        // Divide rate change by dT to get differential (ie dr/dt).
+        // dT is fixed and calculated from the target PID loop time
+        // This is done to avoid DTerm spikes that occur with dynamically
+        // calculated deltaT whenever another task causes the PID
+        // loop execution to be delayed.
+        const float delta =
+            - (gyroRateDterm[axis] - previousGyroRateDterm[axis]) * pidFrequency;
+        
+#if defined(USE_ACC)
+        if (cmpTimeUs(currentTimeUs, levelModeStartTimeUs) > CRASH_RECOVERY_DETECTION_DELAY_US) {
+            detectAndSetCrashRecovery(pidProfile->crash_recovery, axis, currentTimeUs, delta, errorRate);
+        }
+#endif
+        
+            
         // -----calculate D component
         // disable D if launch control is active
         if ((pidCoefficient[axis].Kd > 0) && !launchControlActive) {
 
-            // Divide rate change by dT to get differential (ie dr/dt).
-            // dT is fixed and calculated from the target PID loop time
-            // This is done to avoid DTerm spikes that occur with dynamically
-            // calculated deltaT whenever another task causes the PID
-            // loop execution to be delayed.
-            const float delta =
-                - (gyroRateDterm[axis] - previousGyroRateDterm[axis]) * pidFrequency;
-
-#if defined(USE_ACC)
-            if (cmpTimeUs(currentTimeUs, levelModeStartTimeUs) > CRASH_RECOVERY_DETECTION_DELAY_US) {
-                detectAndSetCrashRecovery(pidProfile->crash_recovery, axis, currentTimeUs, delta, errorRate);
-            }
-#endif
 
             float dMinFactor = 1.0f;
 #if defined(USE_D_MIN)

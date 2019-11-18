@@ -473,7 +473,7 @@ static bool bbUpdateStart(void)
             }
             dshotTelemetryState.readCount++;
 
-            if (value != BB_INVALID) {
+            if (value != BB_INVALID && value != BB_NOEDGE) {
                 dshotTelemetryState.motorState[motorIndex].telemetryValue = value;
                 dshotTelemetryState.motorState[motorIndex].telemetryActive = true;
                 if (motorIndex < 4) {
@@ -483,7 +483,7 @@ static bool bbUpdateStart(void)
                 dshotTelemetryState.invalidPacketCount++;
             }
 #ifdef USE_DSHOT_TELEMETRY_STATS
-            updateDshotTelemetryQuality(&dshotTelemetryQuality[motorIndex], value != BB_INVALID, currentTimeMs);
+            updateDshotTelemetryQuality(&dshotTelemetryQuality[motorIndex], value != BB_INVALID && value != BB_NOEDGE, currentTimeMs);
 #endif
         }
     }

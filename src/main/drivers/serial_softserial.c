@@ -451,10 +451,12 @@ void extractAndStoreRxByte(softSerial_t *softSerial)
     uint8_t rxByte = (softSerial->internalRxBuffer >> 1) & 0xFF;
 
     if (softSerial->port.rxCallback) {
+        prepareForNextRxByte(softSerial);
         softSerial->port.rxCallback(rxByte, softSerial->port.rxCallbackData);
     } else {
         softSerial->port.rxBuffer[softSerial->port.rxBufferHead] = rxByte;
         softSerial->port.rxBufferHead = (softSerial->port.rxBufferHead + 1) % softSerial->port.rxBufferSize;
+        prepareForNextRxByte(softSerial);
     }
 }
 
@@ -478,7 +480,6 @@ void processRxState(softSerial_t *softSerial)
         }
 
         extractAndStoreRxByte(softSerial);
-        prepareForNextRxByte(softSerial);
     }
 }
 
