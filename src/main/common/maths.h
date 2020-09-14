@@ -116,6 +116,7 @@ void normalizeV(struct fp_vector *src, struct fp_vector *dest);
 void rotateV(struct fp_vector *v, fp_angles_t *delta);
 void buildRotationMatrix(fp_angles_t *delta, fp_rotationMatrix_t *rotation);
 void applyRotation(float *v, fp_rotationMatrix_t *rotationMatrix);
+void applyInverseRotation(float *v, fp_rotationMatrix_t *rotationMatrix);
 
 int32_t quickMedianFilter3(int32_t * v);
 int32_t quickMedianFilter5(int32_t * v);

@@ -222,3 +222,4 @@ void initYawSpinRecovery(int maxYawRate);
 #ifdef USE_GYRO_DATA_ANALYSE
 bool isDynamicFilterActive(void);
 #endif
+void gyroAdjustSetpointForGyroOverflow(float* setpoints);

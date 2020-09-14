@@ -329,9 +329,9 @@ static FAST_RAM_ZERO_INIT pt1Filter_t antiGravityThrottleLpf;
 static FAST_RAM_ZERO_INIT float ffBoostFactor;
 static FAST_RAM_ZERO_INIT float ffSmoothFactor;
 static FAST_RAM_ZERO_INIT float ffSpikeLimitInverse;
-static FAST_RAM_ZERO_INIT pt1Filter_t crashRelaxPt1[XYZ_AXIS_COUNT + 1];
-static FAST_RAM_ZERO_INIT float crashRelaxSetpointThreshold;
-static FAST_RAM_ZERO_INIT float crashRelaxHpf;
+static pt1Filter_t crashRelaxPt1[XYZ_AXIS_COUNT + 1];
+static float crashRelaxSetpointThreshold;
+static float crashRelaxHpf;
 
 
 float pidGetSpikeLimitInverse()
@@ -948,7 +948,7 @@ static void handleCrashRecovery(
     }
 }
 
-static void detectAndSetCrashRecovery(
+FAST_CODE_NOINLINE static void detectAndSetCrashRecovery(
     const pidCrashRecovery_e crash_recovery, const int axis,
     const timeUs_t currentTimeUs, const float delta, const float errorRate)
 {
@@ -1110,8 +1110,8 @@ static void rotateVector(float v[XYZ_AXIS_COUNT], float rotation[XYZ_AXIS_COUNT]
     for (int i = 0; i < XYZ_AXIS_COUNT; i++) {
         int i_1 = (i + 1) % 3;
         int i_2 = (i + 2) % 3;
-        float newV = v[i_1] + v[i_2] * rotation[i];
-        v[i_2] -= v[i_1] * rotation[i];
+        float newV = v[i_1] * cos_approx(rotation[i]) + v[i_2] * sin_approx(rotation[i]);
+        v[i_2] = v[i_2] * cos_approx(rotation[i]) - v[i_1] * sin_approx(rotation[i]);
         v[i_1] = newV;
     }
 }
@@ -1516,7 +1516,7 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
             axisDynCi = (axis == FD_YAW) ? dynCi : dT; // only apply windup protection to yaw
         }
 
-        pidData[axis].I = constrainf(previousIterm + (Ki * axisDynCi + agGain) * itermErrorRate, -itermLimit, itermLimit);
+        pidData[axis].I = constrainf(previousIterm + (Ki * axisDynCi) * itermErrorRate, -itermLimit, itermLimit);
 
         // -----calculate pidSetpointDelta
         float pidSetpointDelta = 0;

@@ -34,6 +34,8 @@ typedef struct boardAlignment_s {
 PG_DECLARE(boardAlignment_t, boardAlignment);
 
 void alignSensorViaMatrix(float *dest, fp_rotationMatrix_t* rotationMatrix);
+void invertSensorAlignmentViaMatrix(float *dest, fp_rotationMatrix_t* sensorRotationMatrix);
 void alignSensorViaRotation(float *dest, uint8_t rotation);
+void invertSensorAlignmentViaRotation(float *dest, uint8_t rotation);
 
 void initBoardAlignment(const boardAlignment_t *boardAlignment);

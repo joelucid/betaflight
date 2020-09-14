@@ -78,6 +78,15 @@ FAST_CODE_NOINLINE void alignSensorViaMatrix(float *dest, fp_rotationMatrix_t* s
     }
 }
 
+FAST_CODE_NOINLINE void invertSensorAlignmentViaMatrix(float *dest, fp_rotationMatrix_t* sensorRotationMatrix)
+{
+    if (!standardBoardAlignment) {
+        applyInverseRotation(dest, &boardRotation);
+    }
+
+    applyInverseRotation(dest, sensorRotationMatrix);
+}
+
 FAST_CODE void alignSensorViaRotation(float *dest, uint8_t rotation)
 {
     const float x = dest[X];
@@ -131,4 +140,61 @@ FAST_CODE void alignSensorViaRotation(float *dest, uint8_t rotation)
     if (!standardBoardAlignment) {
         alignBoard(dest);
     }
+}
+
+
+FAST_CODE void invertSensorAlignmentViaRotation(float *dest, uint8_t rotation)
+{
+    if (!standardBoardAlignment) {
+        applyInverseRotation(dest, &boardRotation);
+    }
+
+    const float x = dest[X];
+    const float y = dest[Y];
+    const float z = dest[Z];
+
+    switch (rotation) {
+    default:
+    case CW0_DEG:
+        dest[X] = x;
+        dest[Y] = y;
+        dest[Z] = z;
+        break;
+    case CW90_DEG:
+        dest[X] = -y;
+        dest[Y] = x;
+        dest[Z] = z;
+        break;
+    case CW180_DEG:
+        dest[X] = -x;
+        dest[Y] = -y;
+        dest[Z] = z;
+        break;
+    case CW270_DEG:
+        dest[X] = y;
+        dest[Y] = -x;
+        dest[Z] = z;
+        break;
+    case CW0_DEG_FLIP:
+        dest[X] = -x;
+        dest[Y] = y;
+        dest[Z] = -z;
+        break;
+    case CW90_DEG_FLIP:
+        dest[X] = y;
+        dest[Y] = x;
+        dest[Z] = -z;
+        break;
+    case CW180_DEG_FLIP:
+        dest[X] = x;
+        dest[Y] = -y;
+        dest[Z] = -z;
+        break;
+    case CW270_DEG_FLIP:
+        dest[X] = -y;
+        dest[Y] = -x;
+        dest[Z] = -z;
+        break;
+    }
+
 }

@@ -41,6 +41,24 @@ FAST_CODE float nullFilterApply(filter_t *filter, float input)
     return input;
 }
 
+void derivativeEstimateInit(derivativeEstimator_t* estimator, float speedConstant, float gain) 
+{
+    estimator->speedConstant = speedConstant;
+    estimator->conversionConstant = gain;
+    estimator->lastPredictErr = 0;
+    estimator->derivativeEstimate = 0;
+}
+
+float derivativeEstimatorApply(derivativeEstimator_t* estimator, float value, float pidFrequency, float dT) 
+{
+    const float valueEstimate = estimator->oldValueEstimate + estimator->derivativeEstimate * dT;
+    const float predictErr = valueEstimate - value;
+    const float predictErrSpeed = (predictErr - estimator->lastPredictErr) * pidFrequency;
+    estimator->lastPredictErr = predictErr;
+    const float desiredErrSpeed = -predictErr * estimator->speedConstant;
+    estimator->derivativeEstimate += (desiredErrSpeed - predictErrSpeed) * estimator->conversionConstant;
+    return estimator->derivativeEstimate;
+}
 
 // PT1 Low Pass filter
 

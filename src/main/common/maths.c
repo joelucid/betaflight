@@ -237,6 +237,17 @@ FAST_CODE void applyRotation(float *v, fp_rotationMatrix_t *rotationMatrix)
     vDest->Z = (rotationMatrix->m[0][Z] * vTmp.X + rotationMatrix->m[1][Z] * vTmp.Y + rotationMatrix->m[2][Z] * vTmp.Z);
 }
 
+FAST_CODE void applyInverseRotation(float *v, fp_rotationMatrix_t *rotationMatrix)
+{
+    struct fp_vector *vDest = (struct fp_vector *)v;
+    struct fp_vector vTmp = *vDest;
+
+    vDest->X = (rotationMatrix->m[X][0] * vTmp.X + rotationMatrix->m[X][1] * vTmp.Y + rotationMatrix->m[X][2] * vTmp.Z);
+    vDest->Y = (rotationMatrix->m[Y][0] * vTmp.X + rotationMatrix->m[Y][1] * vTmp.Y + rotationMatrix->m[Y][2] * vTmp.Z);
+    vDest->Z = (rotationMatrix->m[Z][0] * vTmp.X + rotationMatrix->m[Z][1] * vTmp.Y + rotationMatrix->m[Z][2] * vTmp.Z);
+}
+
+
 // Rotate a vector *v by the euler angles defined by the 3-vector *delta.
 void rotateV(struct fp_vector *v, fp_angles_t *delta)
 {

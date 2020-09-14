@@ -408,6 +408,55 @@ static FAST_CODE FAST_CODE_NOINLINE void gyroUpdateSensor(gyroSensor_t *gyroSens
     }
 }
 
+
+FAST_CODE float gyroGetGyroScale(const float* setpoints, gyroSensor_t *gyroSensor)
+{
+    float gyros[3];
+    memcpy(gyros, setpoints, sizeof(gyros));
+    if (gyroSensor->gyroDev.gyroAlign == ALIGN_CUSTOM) {
+        invertSensorAlignmentViaMatrix(gyros, &gyroSensor->gyroDev.rotationMatrix);
+    } else {
+        invertSensorAlignmentViaRotation(gyros, gyroSensor->gyroDev.gyroAlign);
+    }
+    float gyroScale = 1.0f;
+    for (int i = 0; i < 3; i++) {
+        if (ABS(gyros[i]) > 1800.0f) {
+            const float scale = 1800.0f / ABS(gyros[i]);
+            if (scale < gyroScale) {
+                gyroScale = scale;
+            }
+        }
+    }
+    return gyroScale;
+}
+
+FAST_CODE float gyroGetOverflowAvoidanceScale(const float* setpoints)
+{
+    switch (gyro.gyroToUse) {
+    default:        
+    case GYRO_CONFIG_USE_GYRO_1:
+        return gyroGetGyroScale(setpoints, &gyro.gyroSensor1);
+#ifdef USE_MULTI_GYRO
+    case GYRO_CONFIG_USE_GYRO_2:
+        return gyroGetGyroScale(setpoints, &gyro.gyroSensor2);
+    case GYRO_CONFIG_USE_GYRO_BOTH: {
+        const float scale1 = gyroGetGyroScale(setpoints, &gyro.gyroSensor1);
+        const float scale2 = gyroGetGyroScale(setpoints, &gyro.gyroSensor2);
+        return MIN(scale1, scale2);
+    }
+#endif
+    }
+}
+
+FAST_CODE void gyroAdjustSetpointForGyroOverflow(float* setpoints)
+{
+    float scale = gyroGetOverflowAvoidanceScale(setpoints);
+    for (int i = 0; i < 3; i++) {
+        setpoints[i] *= scale;
+    }
+}
+
+
 FAST_CODE void gyroUpdate(void)
 {
     switch (gyro.gyroToUse) {

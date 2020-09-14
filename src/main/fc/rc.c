@@ -200,7 +200,7 @@ float applyActualRates(const int axis, float rcCommandf, const float rcCommandfA
     expof = rcCommandfAbs * (powerf(rcCommandf, 5) * expof + rcCommandf * (1 - expof));
 
     const float centerSensitivity = currentControlRateProfile->rcRates[axis] * 10.0f;
-    const float stickMovement = MAX(0, currentControlRateProfile->rates[axis] * 10.0f - centerSensitivity);
+   const float stickMovement = MAX(0, currentControlRateProfile->rates[axis] * 10.0f - centerSensitivity);
     const float angleRate = rcCommandf * centerSensitivity + stickMovement * expof;
 
     return angleRate;
@@ -250,15 +250,21 @@ static void calculateSetpointRate(int axis)
         float rcCommandf;
         if (axis == FD_YAW) {
             rcCommandf = rcCommand[axis] / rcCommandYawDivider;
+            rcDeflection[axis] = rcCommandf;
+            const float rcCommandfAbs = fabsf(rcCommandf);
+            rcDeflectionAbs[axis] = rcCommandfAbs;
+            angleRate = applyRates(axis, rcCommandf, rcCommandfAbs);
         } else {
-            rcCommandf = rcCommand[axis] / rcCommandDivider;
+            float rpScale = 0.0f;
+            for (int i = 0; i<2; i++) {
+                rcDeflection[i] = rcCommand[i] / rcCommandDivider;
+                rcDeflectionAbs[i] = fabsf(rcDeflection[i]);
+            }
+            float rpDeflection = sqrtf(rcDeflection[0] * rcDeflection[0] + rcDeflection[1] * rcDeflection[1]);
+            if (rpDeflection > 0.0f)
+                rpScale = fabsf(applyRates(0, rpDeflection, fabsf(rpDeflection))) / rpDeflection;
+            angleRate = rcDeflection[axis] * rpScale;
         }
-        
-        rcDeflection[axis] = rcCommandf;
-        const float rcCommandfAbs = fabsf(rcCommandf);
-        rcDeflectionAbs[axis] = rcCommandfAbs;
-
-        angleRate = applyRates(axis, rcCommandf, rcCommandfAbs);
     }
     // Rate limit from profile (deg/sec)
     setpointRate[axis] = constrainf(angleRate, -1.0f * currentControlRateProfile->rate_limit[axis], 1.0f * currentControlRateProfile->rate_limit[axis]);
@@ -690,18 +696,29 @@ FAST_CODE void processRcCommand(void)
 
 #ifdef USE_INTERPOLATED_SP
     if (isRxDataNew) {
+        float rpScale = 0.0f;
+        float rcCommandRoll = rcCommand[0] / rcCommandDivider;
+        float rcCommandPitch = rcCommand[1] / rcCommandDivider;
+            
+        float rpDeflection = sqrtf(rcCommandRoll * rcCommandRoll + rcCommandPitch * rcCommandPitch);
+        if (rpDeflection > 0.0f)
+            rpScale = fabsf(applyRates(0, rpDeflection, rpDeflection)) / rpDeflection;
+        
         for (int i = FD_ROLL; i <= FD_YAW; i++) {
             oldRcCommand[i] = rcCommand[i];
             float rcCommandf;
             if (i == FD_YAW) {
                 rcCommandf = rcCommand[i] / rcCommandYawDivider;
+                const float rcCommandfAbs = fabsf(rcCommandf);
+                rawSetpoint[i] = applyRates(i, rcCommandf, rcCommandfAbs);
+                rawDeflection[i] = rcCommandf;
             } else {
                 rcCommandf = rcCommand[i] / rcCommandDivider;
+                rawSetpoint[i] = rpScale * rcCommandf;
+                rawDeflection[i] = rcCommandf;
             }
-            const float rcCommandfAbs = fabsf(rcCommandf);
-            rawSetpoint[i] = applyRates(i, rcCommandf, rcCommandfAbs);
-            rawDeflection[i] = rcCommandf;
         }
+        gyroAdjustSetpointForGyroOverflow(rawSetpoint);
     }
 #endif
 
@@ -729,7 +746,8 @@ FAST_CODE void processRcCommand(void)
 #endif
             calculateSetpointRate(axis);
         }
-
+        gyroAdjustSetpointForGyroOverflow(setpointRate);
+        
         DEBUG_SET(DEBUG_RC_INTERPOLATION, 3, setpointRate[0]);
 
         // Scaling of AngleRate to camera angle (Mixing Roll and Yaw)

@@ -60,6 +60,17 @@ typedef enum {
     FILTER_BPF,
 } biquadFilterType_e;
 
+typedef struct derivativeEstimator_s {
+    float oldValueEstimate;
+    float derivativeEstimate;
+    float lastPredictErr;
+    float speedConstant;
+    float conversionConstant;
+} derivativeEstimator_t;
+
+float derivativeEstimatorApply(derivativeEstimator_t* estimator, float value, float pidFrequency, float dT);
+    
+
 typedef float (*filterApplyFnPtr)(filter_t *filter, float input);
 
 float nullFilterApply(filter_t *filter, float input);
