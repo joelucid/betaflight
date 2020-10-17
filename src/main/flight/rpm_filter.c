@@ -189,6 +189,8 @@ FAST_CODE_NOINLINE void rpmFilterUpdate()
 
     for (int motor = 0; motor < getMotorCount(); motor++) {
         filteredMotorErpm[motor] = pt1FilterApply(&rpmFilters[motor], getDshotTelemetry(motor));
+        motorFrequency[motor] = erpmToHz * filteredMotorErpm[motor];
+        minMotorFrequency = 0.0f;
         if (motor < 4) {
             DEBUG_SET(DEBUG_RPM_FILTER, motor, motorFrequency[motor]);
         }
@@ -221,8 +223,6 @@ FAST_CODE_NOINLINE void rpmFilterUpdate()
                 if (++currentMotor == getMotorCount()) {
                     currentMotor = 0;
                 }
-                motorFrequency[currentMotor] = erpmToHz * filteredMotorErpm[currentMotor];
-                minMotorFrequency = 0.0f;
             }
             currentFilter = &filters[currentFilterNumber];
         }
@@ -246,6 +246,11 @@ float rpmMinMotorFrequency()
         }
     }
     return minMotorFrequency;
+}
+
+float rpmGetMotorFrequency(int motor)
+{
+    return motorFrequency[motor];
 }
 
 

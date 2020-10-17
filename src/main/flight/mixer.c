@@ -511,9 +511,9 @@ static void calculateThrottleAndCurrentMotorEndpoints(timeUs_t currentTimeUs)
 {
     static uint16_t rcThrottlePrevious = 0;   // Store the last throttle direction for deadband transitions
     static timeUs_t reversalTimeUs = 0; // time when motors last reversed in 3D mode
-    static float motorRangeMinIncrease = 0;
+    static float motorRangeMinIncrease[MAX_SUPPORTED_MOTORS];
 #ifdef USE_DYN_IDLE
-    static float oldMinRps;
+    static float oldRps[MAX_SUPPORTED_MOTORS];
 #endif
     float currentThrottleInputRange = 0;
 
@@ -622,24 +622,30 @@ static void calculateThrottleAndCurrentMotorEndpoints(timeUs_t currentTimeUs)
         throttle = rcCommand[THROTTLE] - PWM_RANGE_MIN + throttleAngleCorrection;
         float appliedMotorOutputLow = motorOutputLow;
 #ifdef USE_DYN_IDLE
+        float maxMotorRangeMinIncrease = -1000.0f;
         if (idleMinMotorRps > 0.0f) {
             appliedMotorOutputLow = DSHOT_MIN_THROTTLE;
             const float maxIncrease = isAirmodeActivated() ? idleMaxIncrease : 0.04f;
-            const float minRps = rpmMinMotorFrequency();
-            const float targetRpsChangeRate = (idleMinMotorRps - minRps) * currentPidProfile->idle_adjustment_speed;
-            const float error = targetRpsChangeRate - (minRps - oldMinRps) * pidGetPidFrequency();
-            const float pidSum = constrainf(idleP * error, -currentPidProfile->idle_pid_limit, currentPidProfile->idle_pid_limit);
-            motorRangeMinIncrease = constrainf(motorRangeMinIncrease + pidSum * pidGetDT(), 0.0f, maxIncrease);
-            oldMinRps = minRps;
+            for (int i = 0; i < motorCount; i++) {
+                const float rps = rpmGetMotorFrequency(i);
+                const float targetRpsChangeRate = /* (idleMinMotorRps - rps) * fabsf(idleMinMotorRps - rps) * currentPidProfile->idle_adjustment_speed * 0.15f +  */(idleMinMotorRps - rps) * currentPidProfile->idle_adjustment_speed;
+                const float error = targetRpsChangeRate - (rps - oldRps[i]) * pidGetPidFrequency();
+                const float pidSum = constrainf(idleP * error, -currentPidProfile->idle_pid_limit, currentPidProfile->idle_pid_limit);
+                oldRps[i] = rps;
+                motorRangeMinIncrease[i] = constrainf(motorRangeMinIncrease[i] + pidSum * pidGetDT(), 0.0f, maxIncrease);
+                if (motorRangeMinIncrease[i] > maxMotorRangeMinIncrease) {
+                    maxMotorRangeMinIncrease = motorRangeMinIncrease[i];
+                }
+                if (i < 4) {
+                    DEBUG_SET(DEBUG_DYN_IDLE, i, motorRangeMinIncrease[i] * 1000);
+                }
+            }
             throttle += idleThrottleOffset * rcCommandThrottleRange;
-
-            DEBUG_SET(DEBUG_DYN_IDLE, 0, motorRangeMinIncrease * 1000);
-            DEBUG_SET(DEBUG_DYN_IDLE, 1, targetRpsChangeRate);
-            DEBUG_SET(DEBUG_DYN_IDLE, 2, error);
-            DEBUG_SET(DEBUG_DYN_IDLE, 3, minRps);
         } else {
-            motorRangeMinIncrease = 0;
-            oldMinRps = 0;
+            for (int i = 0; i < motorCount; i++) {
+                oldRps[i] = 0;
+            }
+            maxMotorRangeMinIncrease = 0;
         }
 #endif
 
@@ -660,7 +666,7 @@ static void calculateThrottleAndCurrentMotorEndpoints(timeUs_t currentTimeUs)
 #endif
 
         currentThrottleInputRange = rcCommandThrottleRange;
-        motorRangeMin = appliedMotorOutputLow + motorRangeMinIncrease * (motorOutputHigh - appliedMotorOutputLow);
+        motorRangeMin = appliedMotorOutputLow + maxMotorRangeMinIncrease * (motorOutputHigh - appliedMotorOutputLow);
         motorOutputMin = motorRangeMin;
         motorOutputRange = motorRangeMax - motorRangeMin;
         motorOutputMixSign = 1;
