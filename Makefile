@@ -620,8 +620,14 @@ targets-by-mcu:
 				fi; \
 			else \
 				if [ "$${DO_BUILD}" = 2 ]; then \
-					echo "Building target $${target} FRSKY..."; \
-					$(MAKE) TARGET=$${target} OPTIONS=USE_FRSKY EXT="_FRSKY"; \
+					echo "Building target $${target} FRSKY_SBUS..."; \
+					$(MAKE) TARGET=$${target} OPTIONS=USE_FRSKY_SBUS EXT="_FRSKY_SBUS"; \
+					if [ $$? -ne 0 ]; then \
+						echo "Building target $${target} failed, aborting."; \
+						exit 1; \
+					fi; \
+					echo "Building target $${target} FRSKY_FPORT..."; \
+					$(MAKE) TARGET=$${target} OPTIONS=USE_FRSKY_FPORT EXT="_FRSKY_FPORT"; \
 					if [ $$? -ne 0 ]; then \
 						echo "Building target $${target} failed, aborting."; \
 						exit 1; \

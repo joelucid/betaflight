@@ -59,12 +59,18 @@
 #define USE_QUAD_MIXER_ONLY
 #define USE_VTX_TABLE
 
-#if !defined(USE_FRSKY) && !defined(USE_FLYSKY) && !defined(USE_SPEKTRUM) && !defined(USE_CRSF)
-#define USE_FRSKY
+#if !defined(USE_FRSKY_SBUS) && !defined(USE_FLYSKY) && !defined(USE_SPEKTRUM) && !defined(USE_CRSF) && !defined(USE_FRSKY_FPORT)
+#define USE_FRSKY_SBUS
 #endif
 
-#if defined(USE_FRSKY)
+#if defined(USE_FRSKY_SBUS)
 #define USE_SERIALRX_SBUS       // Frsky and Futaba receivers
+#define USE_TELEMETRY_FRSKY_HUB
+#define USE_TELEMETRY_SMARTPORT
+#endif
+
+#if defined(USE_FRSKY_FPORT)
+#define USE_SERIALRX_FPORT      // FrSky FPort
 #define USE_TELEMETRY_FRSKY_HUB
 #define USE_TELEMETRY_SMARTPORT
 #endif
